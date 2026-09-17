@@ -511,7 +511,7 @@
 
         function openAdminWithPassword() {
             const inputPwd = prompt("8888：");
-            if (inputPwd === 8888) {
+            if (inputPwd === ADMIN_PASSWORD) {
                 toggleAdmin(true);
             } else if (inputPwd !== null) {
                 alert("密碼錯誤，無法進入後台編輯！");
