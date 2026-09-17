@@ -409,10 +409,11 @@
                 <input type="number" id="new-item-price" placeholder="價格" style="flex:1; padding:6px;">
                 <select id="new-item-category" style="flex:1; padding:6px;">
                     <option value="經典原茶">經典原茶</option>
-                    <option value="特調鮮奶">特調鮮奶</option>
-                    <option value="冬瓜檸檬">冬瓜檸檬</option>
-                    <option value="嫩仙草/雙Q">嫩仙草/雙Q</option>
-                    <option value="加料特調">加料特調</option>
+                    <option value="找鮮奶">找鮮奶</option>
+                    <option value="鐵道招牌">鐵道招牌</option>
+                    <option value="冬瓜和檸檬系列">冬瓜和檸檬系列</option>
+                    <option value="找口感">找口感</option>
+                    <option value="經典特調">經典特調</option>
                 </select>
                 <button class="btn-small btn-primary" onclick="addMenuItem()">新增</button>
             </div>
@@ -427,48 +428,48 @@
         
         const defaultMenu = [
             { id: 1, name: "鐵道紅茶冰", price: 25, category: "經典原茶" },
-            { id: 2, name: "招牌奶茶", price: 35, category: "加料特調" },
-            { id: 3, name: "凍檸茶", price: 35, category: "冬瓜檸檬" },
-            { id: 4, name: "豆漿紅茶", price: 35, category: "經典原茶" },
+            { id: 2, name: "招牌奶茶", price: 35, category: "鐵道招牌" },
+            { id: 3, name: "凍檸茶", price: 35, category: "冬瓜和檸檬系列" },
+            { id: 4, name: "豆漿紅茶", price: 35, category: "經典特調" },
             { id: 5, name: "高山青茶", price: 25, category: "經典原茶" },
             { id: 6, name: "雲霧烏龍茶", price: 30, category: "經典原茶" },
-            { id: 7, name: "多多紅茶", price: 40, category: "加料特調" },
-            { id: 8, name: "招牌烏龍奶", price: 40, category: "加料特調" },
-            { id: 9, name: "招牌奶青", price: 35, category: "加料特調" },
-            { id: 10, name: "凍檸青茶", price: 35, category: "冬瓜檸檬" },
-            { id: 11, name: "鐵道鮮奶茶", price: 40, category: "特調鮮奶" },
-            { id: 12, name: "特濃鮮奶茶", price: 50, category: "特調鮮奶" },
-            { id: 13, name: "珍珠鮮奶茶", price: 50, category: "特調鮮奶" },
-            { id: 14, name: "鮮奶青", price: 40, category: "特調鮮奶" },
-            { id: 15, name: "冬瓜鮮奶", price: 40, category: "特調鮮奶" },
-            { id: 16, name: "烏龍鮮奶", price: 45, category: "特調鮮奶" },
-            { id: 17, name: "多多青", price: 40, category: "加料特調" },
-            { id: 18, name: "特濃鮮奶青", price: 50, category: "特調鮮奶" },
-            { id: 19, name: "特濃冬瓜鮮奶", price: 50, category: "特調鮮奶" },
-            { id: 20, name: "特濃烏龍鮮奶", price: 55, category: "特調鮮奶" },
-            { id: 21, name: "冬瓜茶", price: 25, category: "冬瓜檸檬" },
-            { id: 22, name: "雲霧凍檸烏龍茶", price: 40, category: "冬瓜檸檬" },
+            { id: 7, name: "多多紅茶", price: 40, category: "經典特調" },
+            { id: 8, name: "招牌烏龍奶", price: 40, category: "鐵道招牌" },
+            { id: 9, name: "招牌奶青", price: 35, category: "鐵道招牌" },
+            { id: 10, name: "凍檸青茶", price: 35, category: "冬瓜和檸檬系列" },
+            { id: 11, name: "鐵道鮮奶茶", price: 40, category: "找鮮奶" },
+            { id: 12, name: "特濃鮮奶茶", price: 50, category: "找鮮奶" },
+            { id: 13, name: "珍珠鮮奶茶", price: 50, category: "找口感" },
+            { id: 14, name: "鮮奶青", price: 40, category: "找鮮奶" },
+            { id: 15, name: "冬瓜鮮奶", price: 40, category: "找鮮奶" },
+            { id: 16, name: "烏龍鮮奶", price: 45, category: "找鮮奶" },
+            { id: 17, name: "多多青", price: 40, category: "經典特調" },
+            { id: 18, name: "特濃鮮奶青", price: 50, category: "找鮮奶" },
+            { id: 19, name: "特濃冬瓜鮮奶", price: 50, category: "找鮮奶" },
+            { id: 20, name: "特濃烏龍鮮奶", price: 55, category: "找鮮奶" },
+            { id: 21, name: "冬瓜茶", price: 25, category: "冬瓜和檸檬系列" },
+            { id: 22, name: "雲霧凍檸烏龍茶", price: 40, category: "冬瓜和檸檬系列" },
             { id: 23, name: "雲霧烏龍青", price: 30, category: "經典原茶" },
-            { id: 24, name: "冬瓜紅茶", price: 25, category: "冬瓜檸檬" },
-            { id: 25, name: "冬瓜青茶", price: 25, category: "冬瓜檸檬" },
-            { id: 26, name: "招牌冬瓜奶", price: 35, category: "加料特調" },
-            { id: 27, name: "冬瓜檸檬", price: 35, category: "冬瓜檸檬" },
-            { id: 28, name: "冬瓜檸檬多多", price: 45, category: "冬瓜檸檬" },
-            { id: 29, name: "嫩仙草招牌奶", price: 45, category: "嫩仙草/雙Q" },
-            { id: 30, name: "嫩仙草鮮奶茶", price: 50, category: "嫩仙草/雙Q" },
-            { id: 31, name: "嫩仙草烏龍鮮奶", price: 55, category: "嫩仙草/雙Q" },
-            { id: 32, name: "特濃嫩仙草鮮奶茶", price: 60, category: "嫩仙草/雙Q" },
-            { id: 33, name: "雙Q招牌奶茶", price: 45, category: "嫩仙草/雙Q" },
-            { id: 34, name: "雙Q奶青", price: 45, category: "嫩仙草/雙Q" },
-            { id: 35, name: "雙Q冬瓜鮮奶", price: 50, category: "嫩仙草/雙Q" },
-            { id: 36, name: "雙Q特濃鮮奶茶", price: 60, category: "嫩仙草/雙Q" },
-            { id: 37, name: "珍珠紅茶", price: 35, category: "加料特調" },
-            { id: 38, name: "珍珠青茶", price: 35, category: "加料特調" },
-            { id: 39, name: "珍珠冬瓜", price: 35, category: "冬瓜檸檬" },
-            { id: 40, name: "珍珠招牌奶茶", price: 45, category: "加料特調" },
-            { id: 41, name: "珍珠冬瓜鮮奶", price: 50, category: "特調鮮奶" },
-            { id: 42, name: "特濃珍珠鮮奶茶", price: 60, category: "特調鮮奶" },
-            { id: 43, name: "特濃珍珠冬瓜鮮奶", price: 60, category: "特調鮮奶" }
+            { id: 24, name: "冬瓜紅茶", price: 25, category: "冬瓜和檸檬系列" },
+            { id: 25, name: "冬瓜青茶", price: 25, category: "冬瓜和檸檬系列" },
+            { id: 26, name: "招牌冬瓜奶", price: 35, category: "鐵道招牌" },
+            { id: 27, name: "冬瓜檸檬", price: 35, category: "冬瓜和檸檬系列" },
+            { id: 28, name: "冬瓜檸檬多多", price: 45, category: "冬瓜和檸檬系列" },
+            { id: 29, name: "嫩仙草招牌奶", price: 45, category: "找口感" },
+            { id: 30, name: "嫩仙草鮮奶茶", price: 50, category: "找口感" },
+            { id: 31, name: "嫩仙草烏龍鮮奶", price: 55, category: "找口感" },
+            { id: 32, name: "特濃嫩仙草鮮奶茶", price: 60, category: "找口感" },
+            { id: 33, name: "雙Q招牌奶茶", price: 45, category: "找口感Q" },
+            { id: 34, name: "雙Q奶青", price: 45, category: "找口感" },
+            { id: 35, name: "雙Q冬瓜鮮奶", price: 50, category: "找口感" },
+            { id: 36, name: "雙Q特濃鮮奶茶", price: 60, category: "找口感" },
+            { id: 37, name: "珍珠紅茶", price: 35, category: "找口感" },
+            { id: 38, name: "珍珠青茶", price: 35, category: "找口感" },
+            { id: 39, name: "珍珠冬瓜", price: 35, category: "找口感" },
+            { id: 40, name: "珍珠招牌奶茶", price: 45, category: "找口感" },
+            { id: 41, name: "珍珠冬瓜鮮奶", price: 50, category: "找口感" },
+            { id: 42, name: "特濃珍珠鮮奶茶", price: 60, category: "找口感" },
+            { id: 43, name: "特濃珍珠冬瓜鮮奶", price: 60, category: "找口感" }
         ];
 
         let menuData = JSON.parse(localStorage.getItem('shuiyun_menu_v3')) || defaultMenu;
@@ -476,7 +477,7 @@
         const ADMIN_PASSWORD = "8888";
 
         const sweetnessOpts = ["正常糖(10分)", "少糖(7分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)"];
-        const iceOpts = ["正常冰", "少冰", "微冰", "去冰", "熱飲"];
+        const iceOpts = ["正常冰", "少冰", "微冰", "去冰", ];
         const toppingOpts = [
             { name: "不加料", price: 0 },
             { name: "珍珠", price: 10 },
@@ -510,7 +511,7 @@
 
         function openAdminWithPassword() {
             const inputPwd = prompt("請輸入管理員密碼：");
-            if (inputPwd === ADMIN_PASSWORD) {
+            if (inputPwd === 8888) {
                 toggleAdmin(true);
             } else if (inputPwd !== null) {
                 alert("密碼錯誤，無法進入後台編輯！");
