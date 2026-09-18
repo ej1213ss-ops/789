@@ -183,32 +183,27 @@
 
         .item-footer {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             margin-top: 12px;
             padding-top: 8px;
             border-top: 1px dashed #EEE;
         }
 
-        .qty-controller {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .qty-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 1px solid var(--secondary-color);
-            background: white;
-            color: var(--secondary-color);
-            font-size: 1.1rem;
+        .add-to-cart-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
             font-weight: bold;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .add-to-cart-btn:hover {
+            background-color: var(--primary-color);
         }
 
         /* 底部結帳列 */
@@ -290,9 +285,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 10px 0;
             border-bottom: 1px dashed #EEE;
             font-size: 0.9rem;
+        }
+
+        .cart-qty-controller {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cart-qty-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--secondary-color);
+            background: white;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 後台 Modal */
@@ -398,7 +414,7 @@
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <h3>⚙️ 後台品項與價格管理</h3>
-            <p style="font-size:0.8rem; color:#666; margin-bottom:12px;">您可以自由修改名稱、價格、分類或新增/刪除品項：</p>
+            <p style="font-size:0.8rem; color:#666; margin-bottom:12px;">您可以自由修改名稱, 價格, 分類或新增/刪除品項：</p>
             
             <div id="admin-items-list"></div>
 
@@ -424,7 +440,7 @@
 
     <script>
         // 🚨【關鍵設定】請替換為您在 LINE Developers 申請的 LIFF ID
-        const MY_LIFF_ID = "https://script.google.com/macros/s/AKfycbw4MriuuN3YbTbZAP5rli0j7Eaq2AXOOinNq1hSvvAhOoe4FXfyNX0IxtTtxIr5IPoT/exec"; 
+        const MY_LIFF_ID = "YOUR_LIFF_ID_HERE"; 
         
         const defaultMenu = [
             { id: 1, name: "鐵道紅茶冰", price: 25, category: "經典原茶" },
@@ -476,8 +492,8 @@
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby--zF7IHAlRg-x5oKzANbMDyRlO0a8PQR2QpOo5I-Pko4ow3g0Kmccu0aKto54oqik/exec";
         const ADMIN_PASSWORD = "8888";
 
-        const sweetnessOpts = ["正常糖(10分)", "少糖(7分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)"];
-        const iceOpts = ["正常冰", "少冰", "微冰", "去冰", ];
+        const sweetnessOpts = ["正常糖(10分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)"];
+        const iceOpts = ["正常冰", "少冰", "微冰", "去冰"];
         const toppingOpts = [
             { name: "不加料", price: 0 },
             { name: "珍珠", price: 10 },
@@ -487,7 +503,8 @@
             { name: "嫩仙草", price: 10 }
         ];
 
-        let orderState = {};
+        // 購物車改用陣列儲存所有已加入的品項組合
+        let cartItems = [];
         let currentCategory = "全部";
 
         // 初始化 LIFF
@@ -495,7 +512,6 @@
             if (MY_LIFF_ID && MY_LIFF_ID !== "YOUR_LIFF_ID_HERE") {
                 liff.init({ liffId: MY_LIFF_ID })
                     .then(() => {
-                        // 若是在 LINE 客戶端開啟，自動抓取顧客名字
                         if (liff.isInClient() && liff.isLoggedIn()) {
                             liff.getProfile().then(profile => {
                                 if (profile.displayName && !document.getElementById('cust-name').value) {
@@ -557,15 +573,6 @@
             }
 
             itemsToRender.forEach(item => {
-                if (!orderState[item.id]) {
-                    orderState[item.id] = {
-                        qty: 0,
-                        sweetness: sweetnessOpts[0],
-                        ice: iceOpts[0],
-                        topping: 0
-                    };
-                }
-
                 const card = document.createElement('div');
                 card.className = 'menu-item';
                 card.innerHTML = `
@@ -574,64 +581,81 @@
                         <span class="menu-price">$${item.price}</span>
                     </div>
                     <div class="options-group">
-                        <select onchange="updateOption(${item.id}, 'sweetness', this.value)">
-                            ${sweetnessOpts.map(s => `<option value="${s}" ${orderState[item.id].sweetness === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        <select id="sweetness-${item.id}">
+                            ${sweetnessOpts.map(s => `<option value="${s}">${s}</option>`).join('')}
                         </select>
-                        <select onchange="updateOption(${item.id}, 'ice', this.value)">
-                            ${iceOpts.map(i => `<option value="${i}" ${orderState[item.id].ice === i ? 'selected' : ''}>${i}</option>`).join('')}
+                        <select id="ice-${item.id}">
+                            ${iceOpts.map(i => `<option value="${i}">${i}</option>`).join('')}
                         </select>
-                        <select style="grid-column: span 2;" onchange="updateOption(${item.id}, 'topping', Number(this.value))">
-                            ${toppingOpts.map((t, idx) => `<option value="${idx}" ${orderState[item.id].topping === idx ? 'selected' : ''}>${t.name} ${t.price > 0 ? '(+$'+t.price+')' : ''}</option>`).join('')}
+                        <select style="grid-column: span 2;" id="topping-${item.id}">
+                            ${toppingOpts.map((t, idx) => `<option value="${idx}">${t.name} ${t.price > 0 ? '(+$'+t.price+')' : ''}</option>`).join('')}
                         </select>
                     </div>
                     <div class="item-footer">
-                        <span style="font-size:0.85rem; color:#666;">小計: $<span id="subtotal-${item.id}">0</span></span>
-                        <div class="qty-controller">
-                            <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
-                            <span id="qty-${item.id}">${orderState[item.id].qty}</span>
-                            <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
-                        </div>
+                        <button class="add-to-cart-btn" onclick="addCurrentItemToCart(${item.id})">加入購物車 🛒</button>
                     </div>
                 `;
                 container.appendChild(card);
             });
-            calculateTotal();
         }
 
-        function updateOption(id, key, val) {
-            orderState[id][key] = val;
-            calculateTotal();
-        }
+        // 將畫面上所選規格的品項加入購物車
+        function addCurrentItemToCart(itemId) {
+            const item = menuData.find(i => i.id === itemId);
+            if (!item) return;
 
-        function changeQty(id, delta) {
-            if (orderState[id].qty + delta >= 0) {
-                orderState[id].qty += delta;
-                if(document.getElementById(`qty-${id}`)) {
-                    document.getElementById(`qty-${id}`).innerText = orderState[id].qty;
-                }
-                calculateTotal();
+            const sweetness = document.getElementById(`sweetness-${itemId}`).value;
+            const ice = document.getElementById(`ice-${itemId}`).value;
+            const toppingIdx = Number(document.getElementById(`topping-${itemId}`).value);
+            const topping = toppingOpts[toppingIdx];
+
+            // 檢查購物車中是否已經有「品項 ID、甜度、冰塊、加料」完全相同的項目
+            const existingIndex = cartItems.findIndex(ci => 
+                ci.itemId === item.id && 
+                ci.sweetness === sweetness && 
+                ci.ice === ice && 
+                ci.topping === topping.name
+            );
+
+            if (existingIndex > -1) {
+                // 如果已經存在，數量 +1
+                cartItems[existingIndex].qty += 1;
+            } else {
+                // 如果不存在，新增一筆獨立明細
+                cartItems.push({
+                    itemId: item.id,
+                    name: item.name,
+                    basePrice: item.price,
+                    sweetness: sweetness,
+                    ice: ice,
+                    topping: topping.name,
+                    toppingPrice: topping.price,
+                    qty: 1
+                });
             }
+
+            updateCartSummary();
+            
+            // 輕量提示，讓使用者知道已加入
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "已加入 ✓";
+            btn.style.backgroundColor = "#06C755";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "";
+            }, 600);
         }
 
-        function calculateTotal() {
+        // 更新購物車總計與抽屜列表
+        function updateCartSummary() {
             let totalQty = 0;
             let totalAmount = 0;
 
-            menuData.forEach(item => {
-                const state = orderState[item.id];
-                if (state && state.qty > 0) {
-                    const toppingPrice = toppingOpts[state.topping].price;
-                    const unitPrice = item.price + toppingPrice;
-                    const subtotal = unitPrice * state.qty;
-
-                    if(document.getElementById(`subtotal-${item.id}`)) {
-                        document.getElementById(`subtotal-${item.id}`).innerText = subtotal;
-                    }
-                    totalQty += state.qty;
-                    totalAmount += subtotal;
-                } else if (document.getElementById(`subtotal-${item.id}`)) {
-                    document.getElementById(`subtotal-${item.id}`).innerText = 0;
-                }
+            cartItems.forEach(ci => {
+                const unitPrice = ci.basePrice + ci.toppingPrice;
+                totalQty += ci.qty;
+                totalAmount += unitPrice * ci.qty;
             });
 
             document.getElementById('total-qty').innerText = totalQty;
@@ -646,37 +670,48 @@
             else drawer.classList.remove('open');
         }
 
+        // 渲染購物車抽屜中的品項清單（支援單獨增減數量與刪除）
         function renderCartDrawerList() {
             const list = document.getElementById('cart-drawer-list');
             list.innerHTML = '';
-            let hasItem = false;
 
-            menuData.forEach(item => {
-                const state = orderState[item.id];
-                if (state && state.qty > 0) {
-                    hasItem = true;
-                    const topping = toppingOpts[state.topping];
-                    const unitPrice = item.price + topping.price;
-                    const subtotal = unitPrice * state.qty;
-
-                    const row = document.createElement('div');
-                    row.className = 'cart-drawer-item';
-                    row.innerHTML = `
-                        <div>
-                            <strong>${item.name}</strong> × ${state.qty}<br>
-                            <small style="color:#666;">${state.sweetness} / ${state.ice}${topping.name !== '不加料' ? ' / '+topping.name : ''}</small>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="color:var(--accent-color); font-weight:bold;">$${subtotal}</span>
-                        </div>
-                    `;
-                    list.appendChild(row);
-                }
-            });
-
-            if (!hasItem) {
+            if (cartItems.length === 0) {
                 list.innerHTML = `<p style="text-align:center; color:#888; padding:10px;">尚未選擇任何品項</p>`;
+                return;
             }
+
+            cartItems.forEach((ci, index) => {
+                const unitPrice = ci.basePrice + ci.toppingPrice;
+                const subtotal = unitPrice * ci.qty;
+
+                const row = document.createElement('div');
+                row.className = 'cart-drawer-item';
+                row.innerHTML = `
+                    <div style="flex: 1; padding-right: 8px;">
+                        <strong>${ci.name}</strong><br>
+                        <small style="color:#666;">${ci.sweetness} / ${ci.ice}${ci.topping !== '不加料' ? ' / '+ci.topping : ''}</small><br>
+                        <span style="color:var(--accent-color); font-weight:bold;">$${unitPrice} / 杯</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="cart-qty-controller">
+                            <button class="cart-qty-btn" onclick="changeCartItemQty(${index}, -1)">-</button>
+                            <span>${ci.qty}</span>
+                            <button class="cart-qty-btn" onclick="changeCartItemQty(${index}, 1)">+</button>
+                        </div>
+                        <span style="font-weight:bold; min-width: 45px; text-align:right;">$${subtotal}</span>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        // 調整購物車內特定明細的數量
+        function changeCartItemQty(index, delta) {
+            cartItems[index].qty += delta;
+            if (cartItems[index].qty <= 0) {
+                cartItems.splice(index, 1); // 數量歸零直接從購物車移除
+            }
+            updateCartSummary();
         }
 
         function toggleAdmin(show) {
@@ -739,40 +774,36 @@
                 return;
             }
 
-            let orderItems = [];
-            let totalQty = 0;
-            let totalAmount = 0;
-
-            menuData.forEach(item => {
-                const state = orderState[item.id];
-                if (state && state.qty > 0) {
-                    const topping = toppingOpts[state.topping];
-                    const unitPrice = item.price + topping.price;
-                    const subtotal = unitPrice * state.qty;
-
-                    orderItems.push({
-                        name: item.name,
-                        sweetness: state.sweetness,
-                        ice: state.ice,
-                        topping: topping.name,
-                        unitPrice: unitPrice,
-                        qty: state.qty,
-                        subtotal: subtotal
-                    });
-
-                    totalQty += state.qty;
-                    totalAmount += subtotal;
-                }
-            });
-
-            if (orderItems.length === 0) {
-                alert("請至少選擇一杯飲品！");
+            if (cartItems.length === 0) {
+                alert("請至少選擇一杯飲品加入購物車！");
                 return;
             }
 
+            let totalQty = 0;
+            let totalAmount = 0;
+            let formattedOrderItems = [];
+
+            cartItems.forEach(ci => {
+                const unitPrice = ci.basePrice + ci.toppingPrice;
+                const subtotal = unitPrice * ci.qty;
+
+                formattedOrderItems.push({
+                    name: ci.name,
+                    sweetness: ci.sweetness,
+                    ice: ci.ice,
+                    topping: ci.topping,
+                    unitPrice: unitPrice,
+                    qty: ci.qty,
+                    subtotal: subtotal
+                });
+
+                totalQty += ci.qty;
+                totalAmount += subtotal;
+            });
+
             // 1. 同步寫入 Google 試算表
-            if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbw4MriuuN3YbTbZAP5rli0j7Eaq2AXOOinNq1hSvvAhOoe4FXfyNX0IxtTtxIr5IPoT/exec") {
-                orderItems.forEach(item => {
+            if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycby--zF7IHAlRg-x5oKzANbMDyRlO0a8PQR2QpOo5I-Pko4ow3g0Kmccu0aKto54oqik/exec") {
+                formattedOrderItems.forEach(item => {
                     const payload = {
                         customerName: name,
                         itemName: `${item.name} (${item.sweetness}/${item.ice}${item.topping !== '不加料' ? '/'+item.topping : ''})`,
@@ -795,11 +826,11 @@
             if (phone) msg += `📞 電話：${phone}\n`;
             msg += `-------------------------\n`;
             
-            orderItems.forEach(item => {
+            formattedOrderItems.forEach(item => {
                 msg += `▪️ ${item.name}\n`;
-                msg += `   規格：${item.sweetness} / ${item.ice}\n`;
-                if (item.topping !== '不加料') msg += `   加料：${item.topping}\n`;
-                msg += `   價格：$${item.unitPrice} × ${item.qty} 杯 = 小計 $${item.subtotal}\n`;
+                msg += `    規格：${item.sweetness} / ${item.ice}\n`;
+                if (item.topping !== '不加料') msg += `    加料：${item.topping}\n`;
+                msg += `    價格：$${item.unitPrice} × ${item.qty} 杯 = 小計 $${item.subtotal}\n`;
             });
 
             msg += `-------------------------\n`;
