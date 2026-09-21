@@ -29,7 +29,6 @@
             padding-bottom: 110px;
         }
 
-        /* Header 品牌視覺 */
         header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: #FFF;
@@ -56,7 +55,6 @@
             padding: 16px;
         }
 
-        /* 顧客資訊卡片 */
         .user-info-card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -91,7 +89,6 @@
             font-size: 0.95rem;
         }
 
-        /* 搜尋與分類 */
         .search-box {
             margin-bottom: 12px;
         }
@@ -198,7 +195,6 @@
             border-top: 1px dashed #EEE;
         }
 
-        /* 數量控制器 (菜單區) */
         .qty-control {
             display: flex;
             align-items: center;
@@ -250,7 +246,6 @@
             background-color: var(--primary-color);
         }
 
-        /* 底部結帳列 */
         .cart-bar {
             position: fixed;
             bottom: 0;
@@ -289,7 +284,6 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
-        /* 購物車抽屜 */
         .cart-drawer-overlay {
             display: none;
             position: fixed;
@@ -364,7 +358,6 @@
             font-size: 0.85rem;
         }
 
-        /* 模組 Modal */
         .modal {
             display: none;
             position: fixed;
@@ -434,24 +427,22 @@
 
         /* 後台加料管理樣式 */
         .topping-admin-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 10px;
-            margin: 10px 0 16px 0;
-            background: #F2EFE9;
-            padding: 12px;
-            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 10px 0;
         }
 
-        .topping-admin-item {
+        .topping-admin-row {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            font-weight: bold;
+            gap: 8px;
+            background: #FFF;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #DDD;
         }
 
-        /* 快捷備註標籤 */
         .note-tags {
             display: flex;
             flex-wrap: wrap;
@@ -483,7 +474,6 @@
     </header>
 
     <div class="container">
-        <!-- 顧客資料區 -->
         <div class="user-info-card">
             <h3>📋 訂購人資訊</h3>
             <div class="form-group">
@@ -496,21 +486,16 @@
             </div>
         </div>
 
-        <!-- 菜單標題 -->
         <div class="section-title">
             <span>🍵 飲品菜單</span>
             <button class="btn-small btn-primary" onclick="openAdminWithPassword()">⚙️ 後台編輯菜單</button>
         </div>
 
-        <!-- 搜尋列 -->
         <div class="search-box">
             <input type="text" id="search-input" placeholder="🔍 搜尋飲料名稱..." oninput="filterMenu()">
         </div>
 
-        <!-- 分類頁籤 -->
         <div class="category-tabs" id="category-tabs"></div>
-
-        <!-- 菜單列表 -->
         <div id="menu-list"></div>
     </div>
 
@@ -533,11 +518,11 @@
         <button class="submit-btn" id="submit-btn" onclick="openNoteModal()">發送至官方 LINE</button>
     </div>
 
-    <!-- 備註輸入彈窗 Modal -->
+    <!-- 備註 Modal -->
     <div class="modal" id="note-modal">
         <div class="modal-content">
             <h3>📝 訂單備註事項</h3>
-            <p style="font-size:0.85rem; color:#666; margin-top:4px;">是否有其他特殊需求？（例如：需要明細、外送說明等）</p>
+            <p style="font-size:0.85rem; color:#666; margin-top:4px;">是否有其他特殊需求？</p>
 
             <div class="note-tags">
                 <span class="note-tag" onclick="addNoteTag('不需要吸管')">+ 不需要吸管</span>
@@ -554,17 +539,24 @@
         </div>
     </div>
 
-    <!-- 後台管理彈窗 Modal -->
+    <!-- 後台管理 Modal -->
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <h3>⚙️ 後台品項與加料管理</h3>
-            <p style="font-size:0.8rem; color:#666; margin-bottom:12px;">管理者可編輯加料區域及菜單品項：</p>
             
-            <!-- 加料品項開關管理區 -->
-            <div style="border: 1px solid var(--secondary-color); padding: 12px; border-radius: 8px; margin-bottom: 16px; background: #FAF8F5;">
-                <h4 style="color: var(--primary-color); margin-bottom: 6px;">🍡 加料品項開關與自動連動</h4>
-                <p style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">關閉加料時，前台將自動隱藏該選項，且<b>品名帶有該名稱之品項也會自動下架</b>。</p>
+            <!-- 加料品項管理區 -->
+            <div style="border: 1px solid var(--secondary-color); padding: 12px; border-radius: 8px; margin: 12px 0; background: #FAF8F5;">
+                <h4 style="color: var(--primary-color); margin-bottom: 6px;">🍡 加料品項管理</h4>
+                <p style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">在此可編輯、新增、刪除加料品項與設定金額。關閉或刪除時，<b>相關品項將自動隱藏下架</b>。</p>
+                
                 <div class="topping-admin-list" id="topping-admin-list"></div>
+
+                <!-- 新增加料區域 -->
+                <div style="display:flex; gap:6px; margin-top:10px; padding-top:8px; border-top:1px dashed #CCC;">
+                    <input type="text" id="new-topping-name" placeholder="新加料名稱 (例: 仙草)" style="flex:2; padding:6px; border:1px solid #DDD; border-radius:4px;">
+                    <input type="number" id="new-topping-price" placeholder="價格" style="flex:1; padding:6px; border:1px solid #DDD; border-radius:4px;">
+                    <button class="btn-small btn-success" onclick="addNewTopping()">新增加料</button>
+                </div>
             </div>
 
             <hr style="margin: 16px 0;">
@@ -597,7 +589,6 @@
     </div>
 
     <script>
-        // 🚨【關鍵設定】請替換為您在 LINE Developers 申請的 LIFF ID
         const MY_LIFF_ID = "2011647627-2FaZMNpZ"; 
         
         const ALL_SWEETNESS_OPTIONS = [
@@ -609,7 +600,6 @@
             "甜度固定"
         ];
 
-        // 預設加料選項列表 (含 active 狀態)
         const defaultToppings = [
             { name: "不加料", price: 0, active: true },
             { name: "珍珠", price: 10, active: true },
@@ -663,23 +653,20 @@
             { id: 41, name: "珍珠冬瓜鮮奶", price: 50, category: "找口感", allowedSweetness: ["甜度固定"] },
             { id: 42, name: "特濃珍珠鮮奶茶", price: 60, category: "找口感" },
             { id: 43, name: "特濃珍珠冬瓜鮮奶", price: 60, category: "找口感", allowedSweetness: ["甜度固定"] },
-            // 🔹 新增「其他」分類項目
             { id: 44, name: "2,4杯塑膠袋", price: 1, category: "其他", allowedSweetness: ["不調整"], noIce: true, noTopping: true },
             { id: 45, name: "六杯袋", price: 2, category: "其他", allowedSweetness: ["不調整"], noIce: true, noTopping: true }
         ];
 
-        let menuData = JSON.parse(localStorage.getItem('shuiyun_menu_v7')) || defaultMenu;
-        let toppingData = JSON.parse(localStorage.getItem('shuiyun_toppings_v7')) || defaultToppings;
+        let menuData = JSON.parse(localStorage.getItem('shuiyun_menu_v8')) || defaultMenu;
+        let toppingData = JSON.parse(localStorage.getItem('shuiyun_toppings_v8')) || defaultToppings;
 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby--zF7IHAlRg-x5oKzANbMDyRlO0a8PQR2QpOo5I-Pko4ow3g0Kmccu0aKto54oqik/exec";
         const ADMIN_PASSWORD = "8888";
 
         const iceOpts = ["正常冰", "少冰", "微冰", "去冰"];
-
         let cartItems = [];
         let currentCategory = "全部";
 
-        // 初始化 LIFF
         window.onload = function() {
             if (MY_LIFF_ID && MY_LIFF_ID !== "YOUR_LIFF_ID_HERE") {
                 liff.init({ liffId: MY_LIFF_ID })
@@ -728,11 +715,10 @@
         function filterMenu() {
             const keyword = document.getElementById('search-input').value.trim().toLowerCase();
             const filtered = menuData.filter(item => {
-                // 1. 檢查分類與關鍵字搜尋
                 const matchCategory = (currentCategory === "全部") || (item.category === currentCategory);
                 const matchKeyword = item.name.toLowerCase().includes(keyword);
 
-                // 2. 檢查連動下架：若品名包含任何已關閉的加料名稱，自動下架/隱藏
+                // 檢查連動下架：若品名包含任何已關閉的加料名稱，自動下架/隱藏
                 const disabledByTopping = toppingData.some(t => !t.active && item.name.includes(t.name));
 
                 return matchCategory && matchKeyword && !disabledByTopping;
@@ -744,13 +730,9 @@
             if (item.allowedSweetness && Array.isArray(item.allowedSweetness) && item.allowedSweetness.length > 0) {
                 return item.allowedSweetness;
             }
-            if (item.fixedSweetness) {
-                return ["甜度固定"];
-            }
             return ALL_SWEETNESS_OPTIONS;
         }
 
-        // 渲染菜單
         function renderMenu(itemsToRender = menuData) {
             const container = document.getElementById('menu-list');
             container.innerHTML = '';
@@ -760,7 +742,6 @@
                 return;
             }
 
-            // 過濾出目前後台設定為啟用的加料選項
             const activeToppings = toppingData.filter(t => t.active);
 
             itemsToRender.forEach(item => {
@@ -768,7 +749,6 @@
                 const card = document.createElement('div');
                 card.className = 'menu-item';
 
-                // 判斷是否為「其他」分類或不需要冰塊加料的非飲料類品項（例如袋子）
                 const isSpecial = item.category === "其他" || item.noTopping;
 
                 card.innerHTML = `
@@ -809,7 +789,6 @@
             });
         }
 
-        // 菜單卡片上的數量加減與輸入驗證
         function adjustCardQty(itemId, delta) {
             const input = document.getElementById(`qty-${itemId}`);
             let val = parseInt(input.value) || 1;
@@ -820,12 +799,9 @@
         function validateCardQty(itemId) {
             const input = document.getElementById(`qty-${itemId}`);
             let val = parseInt(input.value);
-            if (isNaN(val) || val < 1) {
-                input.value = 1;
-            }
+            if (isNaN(val) || val < 1) input.value = 1;
         }
 
-        // 將餐點加入購物車
         function addCurrentItemToCart(itemId, e) {
             const item = menuData.find(i => i.id === itemId);
             if (!item) return;
@@ -857,7 +833,6 @@
             const toppingText = selectedToppings.length > 0 ? selectedToppings.join('+') : '不加料';
             const addQty = parseInt(document.getElementById(`qty-${itemId}`).value) || 1;
 
-            // 檢查購物車中是否已經有完全相同規格的項目
             const existingIndex = cartItems.findIndex(ci => 
                 ci.itemId === item.id && 
                 ci.sweetness === sweetness && 
@@ -883,7 +858,6 @@
             document.getElementById(`qty-${itemId}`).value = 1;
             updateCartSummary();
 
-            // 按鈕提示動畫
             const btn = e.target;
             const originalText = btn.innerText;
             btn.innerText = "已加入 ✓";
@@ -894,7 +868,6 @@
             }, 600);
         }
 
-        // 更新購物車總計
         function updateCartSummary() {
             let totalQty = 0;
             let totalAmount = 0;
@@ -917,7 +890,6 @@
             else drawer.classList.remove('open');
         }
 
-        // 渲染購物車抽屜中的品項清單
         function renderCartDrawerList() {
             const list = document.getElementById('cart-drawer-list');
             list.innerHTML = '';
@@ -983,36 +955,83 @@
             }
         }
 
-        // 渲染後台加料管理開關
+        // 渲染後台加料編輯列表 (含名稱、價格編輯與刪除)
         function renderAdminToppingsList() {
             const container = document.getElementById('topping-admin-list');
             container.innerHTML = '';
 
             toppingData.forEach((t, idx) => {
-                if (t.name === "不加料") return; // 不加料預設不開關
-                const div = document.createElement('div');
-                div.className = 'topping-admin-item';
-                div.innerHTML = `
-                    <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-                        <input type="checkbox" ${t.active ? 'checked' : ''} onchange="toggleToppingStatus('${t.name}', this.checked)">
-                        <span>${t.name} ($${t.price})</span>
-                    </label>
+                if (t.name === "不加料") return; // 「不加料」固定不可修改刪除
+
+                const row = document.createElement('div');
+                row.className = 'topping-admin-row';
+                row.innerHTML = `
+                    <input type="checkbox" ${t.active ? 'checked' : ''} onchange="toggleToppingStatus(${idx}, this.checked)" title="勾選開啟 / 取消關閉">
+                    <input type="text" value="${t.name}" onchange="updateToppingName(${idx}, this.value)" style="flex:2; padding:4px 6px; border:1px solid #CCC; border-radius:4px;" placeholder="加料名稱">
+                    <span style="font-size:0.85rem;">$</span>
+                    <input type="number" value="${t.price}" onchange="updateToppingPrice(${idx}, this.value)" style="width:60px; padding:4px 6px; border:1px solid #CCC; border-radius:4px;" placeholder="價格">
+                    <button class="btn-small btn-danger" onclick="deleteTopping(${idx})">刪除</button>
                 `;
-                container.appendChild(div);
+                container.appendChild(row);
             });
         }
 
-        // 切換加料開啟/關閉狀態
-        function toggleToppingStatus(toppingName, isEnabled) {
-            const t = toppingData.find(item => item.name === toppingName);
-            if (t) {
-                t.active = isEnabled;
-                localStorage.setItem('shuiyun_toppings_v7', JSON.stringify(toppingData));
-                filterMenu(); // 重新整理前台菜單（自動隱藏加料選項與帶有該名稱的品項）
+        function toggleToppingStatus(idx, isEnabled) {
+            toppingData[idx].active = isEnabled;
+            saveToppingData();
+        }
+
+        function updateToppingName(idx, val) {
+            const newName = val.trim();
+            if (newName) {
+                toppingData[idx].name = newName;
+                saveToppingData();
             }
         }
 
-        // 渲染後台品項編輯清單
+        function updateToppingPrice(idx, val) {
+            toppingData[idx].price = Number(val) || 0;
+            saveToppingData();
+        }
+
+        function deleteTopping(idx) {
+            if (confirm(`確定要刪除加料「${toppingData[idx].name}」嗎？`)) {
+                toppingData.splice(idx, 1);
+                saveToppingData();
+                renderAdminToppingsList();
+            }
+        }
+
+        function addNewTopping() {
+            const nameInput = document.getElementById('new-topping-name');
+            const priceInput = document.getElementById('new-topping-price');
+
+            const name = nameInput.value.trim();
+            const price = Number(priceInput.value) || 0;
+
+            if (!name) {
+                alert("請輸入加料名稱");
+                return;
+            }
+
+            toppingData.push({
+                name: name,
+                price: price,
+                active: true
+            });
+
+            saveToppingData();
+            nameInput.value = '';
+            priceInput.value = '';
+            renderAdminToppingsList();
+            alert(`已新增加料：${name}`);
+        }
+
+        function saveToppingData() {
+            localStorage.setItem('shuiyun_toppings_v8', JSON.stringify(toppingData));
+            filterMenu();
+        }
+
         function renderAdminItemsList() {
             const container = document.getElementById('admin-items-list');
             container.innerHTML = '';
@@ -1141,11 +1160,10 @@
         }
 
         function saveMenuData() {
-            localStorage.setItem('shuiyun_menu_v7', JSON.stringify(menuData));
+            localStorage.setItem('shuiyun_menu_v8', JSON.stringify(menuData));
             filterMenu();
         }
 
-        /* --- 備註 Modal 與 訂單發送邏輯 --- */
         function openNoteModal() {
             if (cartItems.length === 0) {
                 alert("您的購物車尚無餐點！");
@@ -1210,7 +1228,6 @@
                 orderDetailMsg += `📝 備註：${note}\n`;
             }
 
-            // 發送至 Google Sheets (背景記錄)
             if (GOOGLE_SCRIPT_URL) {
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
@@ -1227,7 +1244,6 @@
                 }).catch(err => console.error("Google Sheets 紀錄錯誤:", err));
             }
 
-            // 使用 LIFF 發送訊息
             if (typeof liff !== 'undefined' && liff.isInClient()) {
                 liff.sendMessages([{
                     type: 'text',
