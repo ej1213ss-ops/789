@@ -17,11 +17,20 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 110px; }
-        header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: #FFF; text-align: center; padding: 28px 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        header h1 { font-size: 1.6rem; letter-spacing: 2px; margin-bottom: 6px; cursor: pointer; user-select: none; }
+        header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: #FFF; text-align: center; padding: 20px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        header h1 { font-size: 1.5rem; letter-spacing: 2px; margin-bottom: 4px; cursor: pointer; user-select: none; }
         header p { font-size: 0.85rem; opacity: 0.85; letter-spacing: 1px; }
+        .store-badge { display: inline-block; background: var(--accent-color); color: #FFF; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; margin-top: 6px; cursor: pointer; }
+
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
         
+        /* 分店選擇頁面 */
+        .store-select-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 6px solid var(--secondary-color); cursor: pointer; transition: transform 0.2s; }
+        .store-select-card:hover { transform: translateY(-2px); }
+        .store-title { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
+        .store-distance { font-size: 0.85rem; color: var(--accent-color); font-weight: bold; }
+        .store-info { font-size: 0.85rem; color: #666; margin-top: 8px; line-height: 1.4; }
+
         .user-info-card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 5px solid var(--secondary-color); }
         .user-info-card h3 { font-size: 1rem; margin-bottom: 12px; color: var(--primary-color); }
         .form-group { margin-bottom: 12px; }
@@ -34,7 +43,7 @@
         .category-tabs::-webkit-scrollbar { display: none; }
         .tab-btn { background: #EAE5D9; color: var(--primary-color); border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; white-space: nowrap; cursor: pointer; }
         .tab-btn.active { background: var(--primary-color); color: #FFF; }
-        .section-title { font-size: 1.1rem; color: var(--primary-color); margin-bottom: 12px; }
+        .section-title { font-size: 1.1rem; color: var(--primary-color); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         
         .menu-item { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .menu-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.05rem; margin-bottom: 8px; }
@@ -84,39 +93,52 @@
     <header>
         <h1 onclick="handleTitleClick()">水云茶堂</h1>
         <p>阿里山鐵道紅茶 ‧ 線上訂餐系統</p>
+        <span class="store-badge" id="current-store-tag" onclick="showStoreSelection()" style="display:none;">📍 點擊切換分店</span>
     </header>
 
     <div class="container">
-        <div class="user-info-card">
-            <h3>📋 訂購人資訊</h3>
-            <div class="form-group">
-                <label for="cust-name">姓名 *</label>
-                <input type="text" id="cust-name" placeholder="請輸入您的姓名" required>
+        <!-- 步驟 1：分店選擇區塊 -->
+        <div id="store-select-view">
+            <div class="section-title">
+                <span>📍 請選擇取餐分店</span>
+                <small id="geo-status" style="font-size:0.75rem; color:#888;">定位中...</small>
             </div>
-            <div class="form-group">
-                <label for="cust-phone">電話 *</label>
-                <input 
-                    type="tel" 
-                    id="cust-phone" 
-                    placeholder="請輸入 09 開頭的 10 位數電話" 
-                    required 
-                    maxlength="10" 
-                    pattern="^09\d{8}$"
-                    oninput="this.value = this.value.replace(/[^\d]/g, '')"
-                >
+            <div id="store-list-container"></div>
+        </div>
+
+        <!-- 步驟 2：點餐主區塊 (預設隱藏) -->
+        <div id="ordering-view" style="display:none;">
+            <div class="user-info-card">
+                <h3>📋 訂購人資訊 (<span id="display-selected-store" style="color:var(--accent-color);"></span>)</h3>
+                <div class="form-group">
+                    <label for="cust-name">姓名 *</label>
+                    <input type="text" id="cust-name" placeholder="請輸入您的姓名" required>
+                </div>
+                <div class="form-group">
+                    <label for="cust-phone">電話 *</label>
+                    <input 
+                        type="tel" 
+                        id="cust-phone" 
+                        placeholder="請輸入 09 開頭的 10 位數電話" 
+                        required 
+                        maxlength="10" 
+                        pattern="^09\d{8}$"
+                        oninput="this.value = this.value.replace(/[^\d]/g, '')"
+                    >
+                </div>
             </div>
-        </div>
 
-        <div class="section-title">
-            <span>🍵 飲品菜單</span>
-        </div>
+            <div class="section-title">
+                <span>🍵 飲品菜單</span>
+            </div>
 
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="🔍 搜尋飲料名稱..." oninput="filterMenu()">
-        </div>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="🔍 搜尋飲料名稱..." oninput="filterMenu()">
+            </div>
 
-        <div class="category-tabs" id="category-tabs"></div>
-        <div id="menu-list"></div>
+            <div class="category-tabs" id="category-tabs"></div>
+            <div id="menu-list"></div>
+        </div>
     </div>
 
     <!-- 購物車抽屜 -->
@@ -130,7 +152,7 @@
     </div>
 
     <!-- 底部購物車條 -->
-    <div class="cart-bar">
+    <div class="cart-bar" id="cart-bar" style="display:none;">
         <div class="cart-summary" onclick="toggleCartDrawer(true)">
             <div>共 <span id="total-qty">0</span> 杯 <u>(點擊檢視明細)</u></div>
             <div>總金額：<span class="total-price" id="total-amount">$0</span></div>
@@ -177,7 +199,7 @@
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
-                <h3 style="color:var(--primary-color);">⚙️ 菜單與加料管理</h3>
+                <h3 style="color:var(--primary-color);">⚙️ <span id="admin-store-title"></span> - 菜單管理</h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
 
@@ -222,9 +244,33 @@
     </div>
 
     <script>
-        const MY_LIFF_ID = "2011647627-2FaZMNpZ"; 
         const ADMIN_USER = "amg8288";
         const ADMIN_PWD = "8888";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby--zF7IHAlRg-x5oKzANbMDyRlO0a8PQR2QpOo5I-Pko4ow3g0Kmccu0aKto54oqik/exec";
+
+        // 分店設定庫 (請依據實體店面替換 LIFF ID 與 座標)
+        const STORES = [
+            {
+                id: "jiali",
+                name: "佳里店",
+                liffId: "2011647627-2FaZMNpZ", // 佳里店專屬 LIFF ID
+                lat: 23.1648,  // 佳里店緯度
+                lng: 120.1764, // 佳里店經度
+                address: "台南市佳里區...",
+                phone: "06-1234567"
+            },
+            {
+                id: "madou",
+                name: "麻豆店",
+                liffId: "YOUR_MADOU_LIFF_ID_HERE", // 麻豆店建立後在此填入 LIFF ID
+                lat: 23.1815,  // 麻豆店緯度
+                lng: 120.2461, // 麻豆店經度
+                address: "台南市麻豆區...",
+                phone: "06-7654321"
+            }
+        ];
+
+        let selectedStore = null;
 
         const ALL_SWEETNESS_OPTIONS = ["正常糖(10分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)", "甜度固定"];
 
@@ -285,17 +331,126 @@
             { id: 45, name: "六杯袋", price: 2, category: "其他", allowedSweetness: ["不調整"], noIce: true, noTopping: true }
         ];
 
-        let menuData = JSON.parse(localStorage.getItem('shuiyun_menu_v8')) || defaultMenu;
-        let toppingData = JSON.parse(localStorage.getItem('shuiyun_toppings_v8')) || defaultToppings;
+        let menuData = [];
+        let toppingData = [];
 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby--zF7IHAlRg-x5oKzANbMDyRlO0a8PQR2QpOo5I-Pko4ow3g0Kmccu0aKto54oqik/exec";
         const iceOpts = ["正常冰", "少冰", "微冰", "去冰"];
         let cartItems = [];
         let currentCategory = "全部";
 
-        function isValidPhone(phone) {
-            return /^09\d{8}$/.test(phone);
+        // 計算兩點經緯度間距離 (公里)
+        function getDistanceKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // 地球半徑
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
+
+        window.onload = function() {
+            initLocationAndStores();
+        };
+
+        // 定位並載入分店列表
+        function initLocationAndStores() {
+            const statusElem = document.getElementById('geo-status');
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        statusElem.innerText = "已完成定位 (由近至遠排序)";
+                        STORES.forEach(s => {
+                            s.distance = getDistanceKm(userLat, userLng, s.lat, s.lng);
+                        });
+                        STORES.sort((a, b) => a.distance - b.distance);
+                        renderStoreList();
+                    },
+                    error => {
+                        statusElem.innerText = "無法取得定位，已預設排序";
+                        renderStoreList();
+                    },
+                    { timeout: 5000 }
+                );
+            } else {
+                statusElem.innerText = "設備不支援定位";
+                renderStoreList();
+            }
+        }
+
+        function renderStoreList() {
+            const container = document.getElementById('store-list-container');
+            container.innerHTML = '';
+            STORES.forEach(store => {
+                const card = document.createElement('div');
+                card.className = 'store-select-card';
+                const distText = store.distance !== undefined ? `距您約 ${store.distance.toFixed(1)} km` : '';
+                card.innerHTML = `
+                    <div class="store-title">
+                        <span>🏪 ${store.name}</span>
+                        <span class="store-distance">${distText}</span>
+                    </div>
+                    <div class="store-info">
+                        📍 ${store.address}<br>
+                        📞 ${store.phone}
+                    </div>
+                `;
+                card.onclick = () => selectStore(store);
+                container.appendChild(card);
+            });
+        }
+
+        function selectStore(store) {
+            selectedStore = store;
+            document.getElementById('store-select-view').style.display = 'none';
+            document.getElementById('ordering-view').style.display = 'block';
+            document.getElementById('cart-bar').style.display = 'flex';
+            document.getElementById('current-store-tag').style.display = 'inline-block';
+            document.getElementById('current-store-tag').innerText = `📍 目前：${store.name} (點擊切換)`;
+            document.getElementById('display-selected-store').innerText = store.name;
+
+            // 依據分店獨立讀取 localStorage 菜單/加料
+            menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${store.id}`)) || defaultMenu;
+            toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${store.id}`)) || defaultToppings;
+
+            // 初始化分店對應 LIFF
+            if (store.liffId && store.liffId !== "YOUR_MADOU_LIFF_ID_HERE") {
+                liff.init({ liffId: store.liffId }).then(() => {
+                    if (liff.isInClient() && liff.isLoggedIn()) {
+                        liff.getProfile().then(profile => {
+                            if (profile.displayName && !document.getElementById('cust-name').value) {
+                                document.getElementById('cust-name').value = profile.displayName;
+                            }
+                        }).catch(err => console.error(err));
+                    }
+                }).catch(err => console.error("LIFF Init Failed:", err));
+            }
+
+            const savedPhone = localStorage.getItem('shuiyun_cust_phone');
+            if (savedPhone && isValidPhone(savedPhone)) {
+                document.getElementById('cust-phone').value = savedPhone;
+            }
+
+            cartItems = [];
+            updateCartSummary();
+            renderCategories();
+            filterMenu();
+        }
+
+        function showStoreSelection() {
+            if (cartItems.length > 0) {
+                if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
+            }
+            document.getElementById('ordering-view').style.display = 'none';
+            document.getElementById('cart-bar').style.display = 'none';
+            document.getElementById('current-store-tag').style.display = 'none';
+            document.getElementById('store-select-view').style.display = 'block';
+        }
+
+        function isValidPhone(phone) { return /^09\d{8}$/.test(phone); }
 
         let titleClickCount = 0;
         let titleClickTimer = null;
@@ -328,6 +483,8 @@
         }
 
         function openAdminModal() {
+            if (!selectedStore) { alert("請先選擇要管理的分店！"); return; }
+            document.getElementById('admin-store-title').innerText = selectedStore.name;
             renderAdminToppingsList();
             renderAdminItemsList();
             renderNewItemSweetnessOptions();
@@ -338,41 +495,6 @@
             renderCategories();
             filterMenu();
         }
-
-        window.onload = function() {
-            const savedPhone = localStorage.getItem('shuiyun_cust_phone');
-            if (savedPhone && isValidPhone(savedPhone)) {
-                document.getElementById('cust-phone').value = savedPhone;
-            }
-
-            if (MY_LIFF_ID && MY_LIFF_ID !== "YOUR_LIFF_ID_HERE") {
-                liff.init({ liffId: MY_LIFF_ID })
-                    .then(() => {
-                        if (liff.isInClient() && liff.isLoggedIn()) {
-                            liff.getProfile().then(profile => {
-                                if (profile.displayName && !document.getElementById('cust-name').value) {
-                                    document.getElementById('cust-name').value = profile.displayName;
-                                }
-                            }).catch(err => console.error(err));
-
-                            try {
-                                const idToken = liff.getDecodedIDToken();
-                                if (idToken && idToken.phone) {
-                                    let formattedPhone = idToken.phone.replace('+886', '0').replace(/\D/g, '');
-                                    if (isValidPhone(formattedPhone)) {
-                                        document.getElementById('cust-phone').value = formattedPhone;
-                                    }
-                                }
-                            } catch (e) {
-                                console.log("無法獲取 LIFF 電話資訊:", e);
-                            }
-                        }
-                    })
-                    .catch(err => console.error("LIFF Init Error:", err));
-            }
-            renderCategories();
-            filterMenu();
-        };
 
         function renderCategories() {
             const categories = ["全部", ...new Set(menuData.map(i => i.category || "其他"))];
@@ -648,7 +770,7 @@
             let totalQty = 0;
             let totalAmount = 0;
 
-            let orderDetailMsg = `🍵 水云茶堂 - 訂單確認\n--------------------------\n`;
+            let orderDetailMsg = `🍵 水云茶堂(${selectedStore.name}) - 訂單確認\n--------------------------\n`;
             orderDetailMsg += `👤 訂購人：${name}\n📞 電 話：${phone}\n--------------------------\n🛒 點餐明細：\n`;
 
             cartItems.forEach((item, index) => {
@@ -665,13 +787,15 @@
             orderDetailMsg += `--------------------------\n📊 總計：${totalQty} 份，共 $${totalAmount} 元\n`;
             if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
-            // 同步寫入 Google 試算表 (透過後端 API)
+            // 同步寫入 Google 試算表 (帶入 storeName 進行試算表分流)
             if (GOOGLE_SCRIPT_URL) {
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
+                        action: "createOrder",
+                        storeName: selectedStore.name,
                         customerName: name,
                         customerPhone: phone,
                         items: cartItems,
@@ -689,11 +813,11 @@
                     alert("發送失敗，請複製明細：\n\n" + orderDetailMsg);
                 });
             } else {
-                alert("非 LINE 環境發送測試：\n\n" + orderDetailMsg);
+                alert(`非 LINE 環境發送測試 [發送目標：${selectedStore.name}]：\n\n` + orderDetailMsg);
             }
         }
 
-        /* --- 後台管理邏輯 --- */
+        /* --- 後台管理邏輯 (依據分店分流) --- */
         function renderAdminToppingsList() {
             const container = document.getElementById('topping-admin-list');
             container.innerHTML = '';
@@ -732,7 +856,11 @@
             document.getElementById('new-topping-price').value = '';
             renderAdminToppingsList();
         }
-        function saveToppingData() { localStorage.setItem('shuiyun_toppings_v8', JSON.stringify(toppingData)); }
+        function saveToppingData() {
+            if (!selectedStore) return;
+            localStorage.setItem(`shuiyun_toppings_${selectedStore.id}`, JSON.stringify(toppingData));
+            syncMenuToGoogleSheets();
+        }
 
         function renderAdminItemsList() {
             const container = document.getElementById('admin-items-list');
@@ -802,7 +930,27 @@
             renderAdminItemsList();
             alert("新增成功！");
         }
-        function saveMenuData() { localStorage.setItem('shuiyun_menu_v8', JSON.stringify(menuData)); }
+        function saveMenuData() {
+            if (!selectedStore) return;
+            localStorage.setItem(`shuiyun_menu_${selectedStore.id}`, JSON.stringify(menuData));
+            syncMenuToGoogleSheets();
+        }
+
+        // 同步菜單資料至對應分店的 Google Sheet 菜單工作表
+        function syncMenuToGoogleSheets() {
+            if (!GOOGLE_SCRIPT_URL || !selectedStore) return;
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    action: "updateMenu",
+                    storeName: selectedStore.name,
+                    menu: menuData,
+                    toppings: toppingData
+                })
+            }).catch(err => console.error("菜單同步失敗:", err));
+        }
     </script>
 </body>
 </html>
