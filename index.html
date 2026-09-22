@@ -91,11 +91,19 @@
             <h3>📋 訂購人資訊</h3>
             <div class="form-group">
                 <label for="cust-name">姓名 *</label>
-                <input type="text" id="cust-name" placeholder="請輸入您的姓名">
+                <input type="text" id="cust-name" placeholder="請輸入您的姓名" required>
             </div>
             <div class="form-group">
-                <label for="cust-phone">電話</label>
-                <input type="tel" id="cust-phone" placeholder="請輸入聯絡電話">
+                <label for="cust-phone">電話 *</label>
+                <input 
+                    type="tel" 
+                    id="cust-phone" 
+                    placeholder="請輸入 09 開頭的 10 位數電話" 
+                    required 
+                    maxlength="10" 
+                    pattern="^09\d{8}$"
+                    oninput="this.value = this.value.replace(/[^\d]/g, '')"
+                >
             </div>
         </div>
 
@@ -218,7 +226,7 @@
 
     <script>
         const MY_LIFF_ID = "2011647627-2FaZMNpZ"; 
-        const ADMIN_USER = "admin";
+        const ADMIN_USER = "amg8288";
         const ADMIN_PWD = "8888";
 
         const ALL_SWEETNESS_OPTIONS = ["正常糖(10分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)", "甜度固定"];
@@ -288,6 +296,11 @@
         let cartItems = [];
         let currentCategory = "全部";
 
+        // 驗證電話號碼格式（09 開頭且共 10 碼）
+        function isValidPhone(phone) {
+            return /^09\d{8}$/.test(phone);
+        }
+
         // 隱密觸發機制：連點標題 5 下
         let titleClickCount = 0;
         let titleClickTimer = null;
@@ -332,6 +345,12 @@
         }
 
         window.onload = function() {
+            // 嘗試載入上次儲存於本地的電話
+            const savedPhone = localStorage.getItem('shuiyun_cust_phone');
+            if (savedPhone && isValidPhone(savedPhone)) {
+                document.getElementById('cust-phone').value = savedPhone;
+            }
+
             if (MY_LIFF_ID && MY_LIFF_ID !== "YOUR_LIFF_ID_HERE") {
                 liff.init({ liffId: MY_LIFF_ID })
                     .then(() => {
@@ -341,6 +360,19 @@
                                     document.getElementById('cust-name').value = profile.displayName;
                                 }
                             }).catch(err => console.error(err));
+
+                            // 若頻道開啟了 phone Scope 權限，嘗試取得解碼 Token 中的電話
+                            try {
+                                const idToken = liff.getDecodedIDToken();
+                                if (idToken && idToken.phone) {
+                                    let formattedPhone = idToken.phone.replace('+886', '0').replace(/\D/g, '');
+                                    if (isValidPhone(formattedPhone)) {
+                                        document.getElementById('cust-phone').value = formattedPhone;
+                                    }
+                                }
+                            } catch (e) {
+                                console.log("無法獲取 LIFF 電話資訊:", e);
+                            }
                         }
                     })
                     .catch(err => console.error("LIFF Init Error:", err));
@@ -557,7 +589,7 @@
                         <small style="color:#666;">${ci.sweetness}${ci.ice !== '無' ? ' / ' + ci.ice : ''}${ci.toppingText !== '不加料' ? ' / '+ci.toppingText : ''}</small><br>
                         <span style="color:var(--accent-color); font-weight:bold;">$${unitPrice} / 份</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align- items: center; gap: 8px;">
                         <div class="cart-qty-controller">
                             <button class="cart-qty-btn" onclick="changeCartItemQty(${index}, -1)">-</button>
                             <input type="number" class="cart-qty-input" value="${ci.qty}" min="1" onchange="updateCartItemQtyInput(${index}, this.value)">
@@ -588,7 +620,12 @@
         function openNoteModal() {
             if (cartItems.length === 0) { alert("您的購物車尚無餐點！"); return; }
             const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            
             if (!name) { alert("請先填寫訂購人姓名！"); return; }
+            if (!phone) { alert("請填寫聯絡電話！"); return; }
+            if (!isValidPhone(phone)) { alert("電話號碼格式錯誤！請輸入以 09 開頭且總長度為 10 位數的手機號碼。"); return; }
+
             document.getElementById('note-modal').style.display = 'flex';
         }
 
@@ -609,11 +646,18 @@
             const name = document.getElementById('cust-name').value.trim();
             const phone = document.getElementById('cust-phone').value.trim();
 
+            if (!name) { alert("請填寫姓名！"); return; }
+            if (!phone) { alert("請填寫電話！"); return; }
+            if (!isValidPhone(phone)) { alert("電話號碼格式不正確，請確認為 09 開頭的 10 位數號碼！"); return; }
+
+            // 成功驗證後儲存至本地快取，方便下一次自動填寫
+            localStorage.setItem('shuiyun_cust_phone', phone);
+
             let totalQty = 0;
             let totalAmount = 0;
 
             let orderDetailMsg = `🍵 水云茶堂 - 訂單確認\n--------------------------\n`;
-            orderDetailMsg += `👤 訂購人：${name}\n📞 電 話：${phone || '未提供'}\n--------------------------\n🛒 點餐明細：\n`;
+            orderDetailMsg += `👤 訂購人：${name}\n📞 電 話：${phone}\n--------------------------\n🛒 點餐明細：\n`;
 
             cartItems.forEach((item, index) => {
                 const unitPrice = item.basePrice + item.toppingPrice;
