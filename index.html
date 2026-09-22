@@ -72,7 +72,7 @@
         .note-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
         .note-tag { background: #EAE5D9; color: var(--primary-color); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; cursor: pointer; }
 
-        /* 後台管理樣式 (彈窗內) */
+        /* 後台管理樣式 */
         .admin-card { background: #FAFAFA; border: 1px solid #E5E5E5; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
         .admin-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
         .sweetness-checkboxes { display: flex; flex-wrap: wrap; gap: 8px; background: #FFF; padding: 8px; border-radius: 6px; border: 1px solid #E0E0E0; font-size: 0.8rem; }
@@ -159,7 +159,7 @@
         </div>
     </div>
 
-    <!-- 1. 管理員驗證 Modal -->
+    <!-- 管理員驗證 Modal -->
     <div class="modal" id="login-modal">
         <div class="modal-content" style="max-width:360px; text-align:center;">
             <h3 style="color:var(--primary-color); margin-bottom:12px;">🔒 管理員身分驗證</h3>
@@ -173,7 +173,7 @@
         </div>
     </div>
 
-    <!-- 2. 後台管理 Modal (直接在此頁面編輯) -->
+    <!-- 後台管理 Modal -->
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
@@ -181,7 +181,6 @@
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
 
-            <!-- 加料管理區域 -->
             <div style="border: 1px solid var(--secondary-color); padding: 12px; border-radius: 8px; margin-bottom: 20px; background: #FAF8F5;">
                 <h4 style="color: var(--primary-color); margin-bottom: 4px;">🍡 加料品項管理</h4>
                 <p style="font-size: 0.75rem; color: #666; margin-bottom: 8px;">取消勾選或刪除時，前台菜單相關品項會同步隱藏。</p>
@@ -193,13 +192,11 @@
                 </div>
             </div>
 
-            <!-- 品項列表編輯區 -->
             <h4 style="margin-bottom:8px;">🍹 飲品品項管理</h4>
             <div id="admin-items-list"></div>
 
             <hr style="margin: 16px 0;">
 
-            <!-- 新增品項區 -->
             <h4>➕ 新增飲品品項</h4>
             <div class="admin-card" style="margin-top: 8px;">
                 <div class="admin-row">
@@ -296,12 +293,10 @@
         let cartItems = [];
         let currentCategory = "全部";
 
-        // 驗證電話號碼格式（09 開頭且共 10 碼）
         function isValidPhone(phone) {
             return /^09\d{8}$/.test(phone);
         }
 
-        // 隱密觸發機制：連點標題 5 下
         let titleClickCount = 0;
         let titleClickTimer = null;
         function handleTitleClick() {
@@ -345,7 +340,6 @@
         }
 
         window.onload = function() {
-            // 嘗試載入上次儲存於本地的電話
             const savedPhone = localStorage.getItem('shuiyun_cust_phone');
             if (savedPhone && isValidPhone(savedPhone)) {
                 document.getElementById('cust-phone').value = savedPhone;
@@ -361,7 +355,6 @@
                                 }
                             }).catch(err => console.error(err));
 
-                            // 若頻道開啟了 phone Scope 權限，嘗試取得解碼 Token 中的電話
                             try {
                                 const idToken = liff.getDecodedIDToken();
                                 if (idToken && idToken.phone) {
@@ -589,7 +582,7 @@
                         <small style="color:#666;">${ci.sweetness}${ci.ice !== '無' ? ' / ' + ci.ice : ''}${ci.toppingText !== '不加料' ? ' / '+ci.toppingText : ''}</small><br>
                         <span style="color:var(--accent-color); font-weight:bold;">$${unitPrice} / 份</span>
                     </div>
-                    <div style="display: flex; align- items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
                         <div class="cart-qty-controller">
                             <button class="cart-qty-btn" onclick="changeCartItemQty(${index}, -1)">-</button>
                             <input type="number" class="cart-qty-input" value="${ci.qty}" min="1" onchange="updateCartItemQtyInput(${index}, this.value)">
@@ -648,9 +641,8 @@
 
             if (!name) { alert("請填寫姓名！"); return; }
             if (!phone) { alert("請填寫電話！"); return; }
-            if (!isValidPhone(phone)) { alert("電話號碼格式不正確，請確認為 09 開頭的 10 位數號碼！"); return; }
+            if (!isValidPhone(phone)) { alert("電話號碼格式不正確！"); return; }
 
-            // 成功驗證後儲存至本地快取，方便下一次自動填寫
             localStorage.setItem('shuiyun_cust_phone', phone);
 
             let totalQty = 0;
@@ -673,13 +665,20 @@
             orderDetailMsg += `--------------------------\n📊 總計：${totalQty} 份，共 $${totalAmount} 元\n`;
             if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
+            // 同步寫入 Google 試算表 (透過後端 API)
             if (GOOGLE_SCRIPT_URL) {
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name, phone: phone, items: cartItems, totalAmount: totalAmount, note: note, timestamp: new Date().toISOString() })
-                }).catch(err => console.error(err));
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        customerName: name,
+                        customerPhone: phone,
+                        items: cartItems,
+                        totalAmount: totalAmount,
+                        note: note
+                    })
+                }).catch(err => console.error("GAS 寫入失敗:", err));
             }
 
             if (typeof liff !== 'undefined' && liff.isInClient()) {
@@ -694,7 +693,7 @@
             }
         }
 
-        /* --- 後台邏輯 (直接在原頁面 Modal 中運作) --- */
+        /* --- 後台管理邏輯 --- */
         function renderAdminToppingsList() {
             const container = document.getElementById('topping-admin-list');
             container.innerHTML = '';
