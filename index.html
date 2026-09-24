@@ -24,6 +24,27 @@
 
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
         
+        /* 營業時間提示條 */
+        .business-status-bar {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .business-status-bar.open {
+            background-color: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #C8E6C9;
+        }
+        .business-status-bar.closed {
+            background-color: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #FFCDD2;
+        }
+
         /* 分店選擇頁面 */
         .store-select-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 6px solid var(--secondary-color); cursor: pointer; transition: transform 0.2s; }
         .store-select-card:hover { transform: translateY(-2px); }
@@ -56,7 +77,9 @@
         .qty-control { display: flex; align-items: center; gap: 4px; background: #F0EDE5; border-radius: 20px; padding: 2px 8px; }
         .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: #FFF; color: var(--primary-color); font-size: 1rem; font-weight: bold; cursor: pointer; }
         .qty-input { width: 40px; text-align: center; border: none; background: transparent; font-weight: bold; font-size: 0.95rem; color: var(--primary-color); }
+        
         .add-to-cart-btn { background-color: var(--secondary-color); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
+        .add-to-cart-btn:disabled { background-color: #CCC !important; cursor: not-allowed; }
         
         /* 購物車 */
         .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--primary-color); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); z-index: 100; }
@@ -108,6 +131,9 @@
 
         <!-- 步驟 2：點餐主區塊 (預設隱藏) -->
         <div id="ordering-view" style="display:none;">
+            <!-- 營業狀態提示條 -->
+            <div id="business-status-bar" class="business-status-bar"></div>
+
             <div class="user-info-card">
                 <h3>📋 訂購人資訊 (<span id="display-selected-store" style="color:var(--accent-color);"></span>)</h3>
                 <div class="form-group">
@@ -248,6 +274,42 @@
     const ADMIN_PWD = "8888";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby--zF7IHAlRg-x5oKzANbMDyRlO0a8PQR2QpOo5I-Pko4ow3g0Kmccu0aKto54oqik/exec";
 
+    // 營業時間設定 (24小時制)
+    const BUSINESS_HOURS = {
+        startHour: 08,   // 開始時間 (08:30)
+        startMinute: 30,
+        endHour: 21,     // 結束時間 (21:30)
+        endMinute: 30
+    };
+
+    // 判斷目前是否為營業時間
+    function isStoreOpen() {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const startMinutes = BUSINESS_HOURS.startHour * 60 + BUSINESS_HOURS.startMinute;
+        const endMinutes = BUSINESS_HOURS.endHour * 60 + BUSINESS_HOURS.endMinute;
+
+        return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    }
+
+    // 更新營業狀態提示列
+    function renderBusinessStatus() {
+        const bar = document.getElementById('business-status-bar');
+        if (!bar) return;
+
+        const isOpen = isStoreOpen();
+        const startStr = `${String(BUSINESS_HOURS.startHour).padStart(2, '0')}:${String(BUSINESS_HOURS.startMinute).padStart(2, '0')}`;
+        const endStr = `${String(BUSINESS_HOURS.endHour).padStart(2, '0')}:${String(BUSINESS_HOURS.endMinute).padStart(2, '0')}`;
+
+        if (isOpen) {
+            bar.className = "business-status-bar open";
+            bar.innerHTML = `🟢 營業中（開放線上點餐時間：${startStr} - ${endStr}）`;
+        } else {
+            bar.className = "business-status-bar closed";
+            bar.innerHTML = `🔴 非營業時間（開放線上點餐時間：${startStr} - ${endStr}）`;
+        }
+    }
+
     // 分店設定庫
     const STORES = [
         {
@@ -271,7 +333,7 @@
     ];
 
     let selectedStore = null;
-    let isLiffInitialized = false; // 紀錄 LIFF 是否已初始化
+    let isLiffInitialized = false;
 
     const ALL_SWEETNESS_OPTIONS = ["正常糖(10分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)", "甜度固定"];
 
@@ -339,7 +401,6 @@
     let cartItems = [];
     let currentCategory = "全部";
 
-    // 計算距離
     function getDistanceKm(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -351,7 +412,6 @@
         return R * c;
     }
 
-    // 輔助函式：解析 URL 參數（相容一般 search 及 LINE Hash 轉址）
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
         let val = urlParams.get(param);
@@ -369,11 +429,10 @@
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                selectStore(targetStore); // 直接進入該分店點餐
+                selectStore(targetStore);
                 return;
             }
         }
-        // 若網址完全沒有帶 store 參數，才顯示選擇分店畫面
         initLocationAndStores();
     };
 
@@ -428,7 +487,6 @@
     function selectStore(store) {
         selectedStore = store;
 
-        // 畫面切換控制
         document.getElementById('store-select-view').style.display = 'none';
         document.getElementById('ordering-view').style.display = 'block';
         document.getElementById('cart-bar').style.display = 'flex';
@@ -444,11 +502,9 @@
             storeDisplay.innerText = store.name;
         }
 
-        // 讀取該分店資料
         menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${store.id}`)) || defaultMenu;
         toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${store.id}`)) || defaultToppings;
 
-        // 初始化分店對應 LIFF（加上防重複初始化機制）
         if (typeof liff !== 'undefined' && store.liffId && !store.liffId.includes("YOUR_")) {
             if (!isLiffInitialized) {
                 liff.init({ liffId: store.liffId }).then(() => {
@@ -471,6 +527,7 @@
 
         cartItems = [];
         updateCartSummary();
+        renderBusinessStatus();
         renderCategories();
         filterMenu();
     }
@@ -479,8 +536,6 @@
         if (cartItems.length > 0) {
             if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
         }
-        
-        // 切換回選擇頁時，改用直接跳轉，確保 URL 乾淨
         window.location.href = window.location.pathname;
     }
 
@@ -526,6 +581,7 @@
     }
     function closeAdminModal() {
         document.getElementById('admin-modal').style.display = 'none';
+        renderBusinessStatus();
         renderCategories();
         filterMenu();
     }
@@ -575,6 +631,7 @@
         }
 
         const activeToppings = toppingData.filter(t => t.active);
+        const isOpen = isStoreOpen();
 
         itemsToRender.forEach(item => {
             const availableSweetness = getItemSweetnessOptions(item);
@@ -583,38 +640,43 @@
 
             const isSpecial = item.category === "其他" || item.noTopping;
 
+            // 依營業狀態調整按鈕屬性
+            const cartBtnHtml = isOpen 
+                ? `<button class="add-to-cart-btn" onclick="addCurrentItemToCart(${item.id}, event)">加入購物車 🛒</button>`
+                : `<button class="add-to-cart-btn" disabled>非營業時間</button>`;
+
             card.innerHTML = `
                 <div class="menu-header">
                     <span>${item.name}</span>
                     <span class="menu-price">$${item.price}</span>
                 </div>
                 <div class="options-group">
-                    <select id="sweetness-${item.id}">
+                    <select id="sweetness-${item.id}" ${!isOpen ? 'disabled' : ''}>
                         ${availableSweetness.map(s => `<option value="${s}">${s}</option>`).join('')}
                     </select>
-                    ${isSpecial ? `<select id="ice-${item.id}"><option value="無">無需調整</option></select>` : `
-                    <select id="ice-${item.id}">
+                    ${isSpecial ? `<select id="ice-${item.id}" ${!isOpen ? 'disabled' : ''}><option value="無">無需調整</option></select>` : `
+                    <select id="ice-${item.id}" ${!isOpen ? 'disabled' : ''}>
                         ${iceOpts.map(i => `<option value="${i}">${i}</option>`).join('')}
                     </select>
                     `}
                     
                     ${isSpecial ? '' : `
                     <div class="topping-label">加料選擇 (可選至多2份)：</div>
-                    <select id="topping1-${item.id}">
+                    <select id="topping1-${item.id}" ${!isOpen ? 'disabled' : ''}>
                         ${activeToppings.map(t => `<option value="${t.name}">加料1: ${t.name} ${t.price > 0 ? '(+$'+t.price+')' : ''}</option>`).join('')}
                     </select>
-                    <select id="topping2-${item.id}">
+                    <select id="topping2-${item.id}" ${!isOpen ? 'disabled' : ''}>
                         ${activeToppings.map(t => `<option value="${t.name}">加料2: ${t.name} ${t.price > 0 ? '(+$'+t.price+')' : ''}</option>`).join('')}
                     </select>
                     `}
                 </div>
                 <div class="item-footer">
                     <div class="qty-control">
-                        <button class="qty-btn" onclick="adjustCardQty(${item.id}, -1)">-</button>
-                        <input type="number" class="qty-input" id="qty-${item.id}" value="1" min="1" onchange="validateCardQty(${item.id})">
-                        <button class="qty-btn" onclick="adjustCardQty(${item.id}, 1)">+</button>
+                        <button class="qty-btn" onclick="adjustCardQty(${item.id}, -1)" ${!isOpen ? 'disabled' : ''}>-</button>
+                        <input type="number" class="qty-input" id="qty-${item.id}" value="1" min="1" onchange="validateCardQty(${item.id})" ${!isOpen ? 'disabled' : ''}>
+                        <button class="qty-btn" onclick="adjustCardQty(${item.id}, 1)" ${!isOpen ? 'disabled' : ''}>+</button>
                     </div>
-                    <button class="add-to-cart-btn" onclick="addCurrentItemToCart(${item.id}, event)">加入購物車 🛒</button>
+                    ${cartBtnHtml}
                 </div>
             `;
             container.appendChild(card);
@@ -635,6 +697,11 @@
     }
 
     function addCurrentItemToCart(itemId, e) {
+        if (!isStoreOpen()) {
+            alert("目前非營業時間，暫不開放點餐與加入購物車！");
+            return;
+        }
+
         const item = menuData.find(i => i.id === itemId);
         if (!item) return;
 
@@ -767,6 +834,10 @@
     }
 
     function openNoteModal() {
+        if (!isStoreOpen()) {
+            alert("目前非營業時間，無法送出訂單！");
+            return;
+        }
         if (cartItems.length === 0) { alert("您的購物車尚無餐點！"); return; }
         const name = document.getElementById('cust-name').value.trim();
         const phone = document.getElementById('cust-phone').value.trim();
@@ -792,6 +863,11 @@
     }
 
     function submitOrder(note) {
+        if (!isStoreOpen()) {
+            alert("目前非營業時間，無法送出訂單！");
+            return;
+        }
+
         const name = document.getElementById('cust-name').value.trim();
         const phone = document.getElementById('cust-phone').value.trim();
 
