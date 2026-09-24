@@ -175,7 +175,7 @@
 
             <div style="display:flex; gap:10px; margin-top:16px;">
                 <button class="btn-small" style="flex:1; background:#888; color:white; padding:10px;" onclick="submitOrder('')">無備註直接發送</button>
-                <button class="btn-small btn-success" style="flex:1; padding:10px;" onclick="confirmNoteAndSubmit()">確認發送訂單 🚀</button>
+                <button class="btn-small btn-success" style="flex:1; padding:10px;" onclick="confirmNoteAndSubmit()">確認發送訂購 🚀</button>
             </div>
             <button class="btn-small btn-close" onclick="closeNoteModal()" style="margin-top:8px;">返回修改餐點</button>
         </div>
@@ -351,7 +351,7 @@
         }
 
         window.onload = function() {
-            // 方案 B：優先解析 URL 參數中的 store 欄位 (例如 index.html?store=jiali)
+            // 優先解析 URL 參數中的 store 欄位 (例如 index.html?store=jiali)
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('store');
             
@@ -418,7 +418,7 @@
         function selectStore(store, updateUrl = true) {
             selectedStore = store;
 
-            // 方案 B：動態更新 URL 網址參數而不重新整理頁面
+            // 動態更新 URL 網址參數而不重新整理頁面
             if (updateUrl) {
                 const newUrl = window.location.pathname + '?store=' + store.id;
                 window.history.pushState({ path: newUrl }, '', newUrl);
@@ -464,7 +464,7 @@
                 if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
             }
             
-            // 方案 B：清除網址中的 store 參數
+            // 清除網址中的 store 參數
             const cleanUrl = window.location.pathname;
             window.history.pushState({ path: cleanUrl }, '', cleanUrl);
 
