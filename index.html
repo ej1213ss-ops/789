@@ -109,6 +109,14 @@
         .admin-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
         .sweetness-checkboxes { display: flex; flex-wrap: wrap; gap: 8px; background: #FFF; padding: 8px; border-radius: 6px; border: 1px solid #E0E0E0; font-size: 0.8rem; }
         .topping-admin-row { display: flex; align-items: center; gap: 8px; background: #FFF; padding: 6px 10px; border-radius: 6px; border: 1px solid #DDD; margin-bottom: 6px; }
+        
+        /* 切換開關樣式 */
+        .status-switch-card { display: flex; justify-content: space-between; align-items: center; background: #FFF8E1; border: 1px solid #FFE082; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+        .switch-label { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
+        .status-btn-group { display: flex; gap: 8px; }
+        .status-btn { padding: 6px 14px; border-radius: 20px; font-weight: bold; border: 1px solid #CCC; background: #FFF; cursor: pointer; font-size: 0.85rem; }
+        .status-btn.active-open { background: #2E7D32; color: #FFF; border-color: #2E7D32; }
+        .status-btn.active-closed { background: #C62828; color: #FFF; border-color: #C62828; }
     </style>
 </head>
 <body>
@@ -225,8 +233,17 @@
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
-                <h3 style="color:var(--primary-color);">⚙️ <span id="admin-store-title"></span> - 菜單管理</h3>
+                <h3 style="color:var(--primary-color);">⚙️ <span id="admin-store-title"></span> - 後台管理</h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
+            </div>
+
+            <!-- 手動切換分店營業狀態 -->
+            <div class="status-switch-card">
+                <span class="switch-label">🏪 分店營業狀態：</span>
+                <div class="status-btn-group">
+                    <button id="admin-status-open" class="status-btn" onclick="setStoreBusinessStatus(true)">開啟營業</button>
+                    <button id="admin-status-closed" class="status-btn" onclick="setStoreBusinessStatus(false)">暫停營業</button>
+                </div>
             </div>
 
             <div style="border: 1px solid var(--secondary-color); padding: 12px; border-radius: 8px; margin-bottom: 20px; background: #FAF8F5;">
@@ -276,14 +293,22 @@
 
     // 營業時間設定 (24小時制)
     const BUSINESS_HOURS = {
-        startHour: 08,   // 開始時間 (08:30)
+        startHour: 8,   // 開始時間 (08:30)
         startMinute: 30,
         endHour: 21,     // 結束時間 (21:30)
         endMinute: 30
     };
 
-    // 判斷目前是否為營業時間
+    // 判斷目前是否為營業時間（結合時間限制與管理員手動開關）
     function isStoreOpen() {
+        if (!selectedStore) return false;
+        
+        // 讀取管理員設定的開關狀態 (預設為 true)
+        const storeManualStatus = localStorage.getItem(`shuiyun_status_${selectedStore.id}`);
+        if (storeManualStatus === 'false') {
+            return false;
+        }
+
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
         const startMinutes = BUSINESS_HOURS.startHour * 60 + BUSINESS_HOURS.startMinute;
@@ -295,13 +320,17 @@
     // 更新營業狀態提示列
     function renderBusinessStatus() {
         const bar = document.getElementById('business-status-bar');
-        if (!bar) return;
+        if (!bar || !selectedStore) return;
 
+        const isManualClosed = localStorage.getItem(`shuiyun_status_${selectedStore.id}`) === 'false';
         const isOpen = isStoreOpen();
         const startStr = `${String(BUSINESS_HOURS.startHour).padStart(2, '0')}:${String(BUSINESS_HOURS.startMinute).padStart(2, '0')}`;
         const endStr = `${String(BUSINESS_HOURS.endHour).padStart(2, '0')}:${String(BUSINESS_HOURS.endMinute).padStart(2, '0')}`;
 
-        if (isOpen) {
+        if (isManualClosed) {
+            bar.className = "business-status-bar closed";
+            bar.innerHTML = `🔴 本店目前暫停營業（管理員關閉點餐系統）`;
+        } else if (isOpen) {
             bar.className = "business-status-bar open";
             bar.innerHTML = `🟢 營業中（開放線上點餐時間：${startStr} - ${endStr}）`;
         } else {
@@ -574,11 +603,39 @@
     function openAdminModal() {
         if (!selectedStore) { alert("請先選擇要管理的分店！"); return; }
         document.getElementById('admin-store-title').innerText = selectedStore.name;
+        
+        // 載入與渲染營業狀態按鈕 UI
+        updateAdminStatusUI();
+
         renderAdminToppingsList();
         renderAdminItemsList();
         renderNewItemSweetnessOptions();
         document.getElementById('admin-modal').style.display = 'flex';
     }
+
+    // 更新後台開關按鈕樣式
+    function updateAdminStatusUI() {
+        if (!selectedStore) return;
+        const status = localStorage.getItem(`shuiyun_status_${selectedStore.id}`) !== 'false';
+        const btnOpen = document.getElementById('admin-status-open');
+        const btnClosed = document.getElementById('admin-status-closed');
+
+        if (status) {
+            btnOpen.className = "status-btn active-open";
+            btnClosed.className = "status-btn";
+        } else {
+            btnOpen.className = "status-btn";
+            btnClosed.className = "status-btn active-closed";
+        }
+    }
+
+    // 後台設定分店營業狀態
+    function setStoreBusinessStatus(isOpen) {
+        if (!selectedStore) return;
+        localStorage.setItem(`shuiyun_status_${selectedStore.id}`, isOpen ? 'true' : 'false');
+        updateAdminStatusUI();
+    }
+
     function closeAdminModal() {
         document.getElementById('admin-modal').style.display = 'none';
         renderBusinessStatus();
@@ -640,7 +697,6 @@
 
             const isSpecial = item.category === "其他" || item.noTopping;
 
-            // 依營業狀態調整按鈕屬性
             const cartBtnHtml = isOpen 
                 ? `<button class="add-to-cart-btn" onclick="addCurrentItemToCart(${item.id}, event)">加入購物車 🛒</button>`
                 : `<button class="add-to-cart-btn" disabled>非營業時間</button>`;
