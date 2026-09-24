@@ -128,6 +128,7 @@
         .order-summary-card { background: #FFF; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .summary-item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #EEE; font-size: 0.9rem; }
         .discount-row { color: var(--accent-color); font-weight: bold; background: #FFF3F0; padding: 8px; border-radius: 6px; margin: 8px 0; }
+        .promo-hint-row { color: #C62828; font-weight: bold; background: #FFEBEE; padding: 8px; border-radius: 6px; margin: 8px 0; border: 1px solid #FFCDD2; font-size: 0.85rem; }
         .total-row { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; padding-top: 10px; color: var(--primary-color); }
         
         /* Modal 通用樣式 */
@@ -923,20 +924,24 @@
             }
         });
 
-        let discountAmount = 0;
-        let minPrice = 0;
+        // 按價格從低到高排序
+        drinkPrices.sort((a, b) => a - b);
 
-        // 買五送一：當飲料總杯數 >= 6 杯時，扣除最低單價品項
-        if (totalDrinkQty >= 6 && drinkPrices.length > 0) {
-            minPrice = Math.min(...drinkPrices);
-            discountAmount = minPrice;
+        // 每 6 杯享有 1 杯免費（買五送一），12 杯享 2 杯，以此類推
+        const freeSets = Math.floor(totalDrinkQty / 6);
+        let discountAmount = 0;
+
+        for (let i = 0; i < freeSets; i++) {
+            if (drinkPrices[i] !== undefined) {
+                discountAmount += drinkPrices[i];
+            }
         }
 
         const finalTotal = rawTotal - discountAmount;
         return {
             rawTotal,
             discountAmount,
-            minPrice,
+            freeSets,
             finalTotal,
             totalDrinkQty
         };
@@ -1076,10 +1081,20 @@
 
         const totals = calculateOrderTotals();
 
+        // 已滿組數折扣提示
         if (totals.discountAmount > 0) {
-            discountContainer.innerHTML = `
+            discountContainer.innerHTML += `
                 <div class="discount-row">
-                    🎉 買五送一活動滿額折扣：已折抵 lowest 價品項 -$${totals.discountAmount}
+                    🎉 買五送一活動優惠：共 ${totals.freeSets} 組，已折抵最低價品項 -$${totals.discountAmount}
+                </div>
+            `;
+        }
+
+        // 差 1 杯湊滿下一組買五送一（例如：5, 11, 17... 杯）
+        if (totals.totalDrinkQty > 0 && totals.totalDrinkQty % 6 === 5) {
+            discountContainer.innerHTML += `
+                <div class="promo-hint-row">
+                    💡 提示：再多點 1 杯即可享有「買五送一」優惠！
                 </div>
             `;
         }
@@ -1119,7 +1134,7 @@
         orderDetailMsg += `--------------------------\n`;
 
         if (totals.discountAmount > 0) {
-            orderDetailMsg += `🎁 買五送一優惠：買6杯折扣最低價 -$${totals.discountAmount}\n`;
+            orderDetailMsg += `🎁 買五送一優惠 (${totals.freeSets}組)：折抵最低價品項 -$${totals.discountAmount}\n`;
         }
 
         orderDetailMsg += `📊 總計：${totalQty} 份，共 $${totals.finalTotal} 元\n`;
