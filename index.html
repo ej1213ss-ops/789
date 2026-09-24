@@ -251,8 +251,8 @@
                 <div id="confirm-item-list"></div>
                 <div id="confirm-discount-info"></div>
                 <div class="total-row">
-                    <span>總計金額</span>
-                    <span id="confirm-final-total" style="color:var(--accent-color);">$0</span>
+                    <span>總計杯數 / 金額</span>
+                    <span id="confirm-final-total" style="color:var(--accent-color);">0 杯 / $0</span>
                 </div>
             </div>
 
@@ -1060,9 +1060,13 @@
         container.innerHTML = '';
         discountContainer.innerHTML = '';
 
+        let totalQty = 0;
+
         cartItems.forEach((ci, idx) => {
             const unitPrice = ci.basePrice + ci.toppingPrice;
             const subtotal = unitPrice * ci.qty;
+            totalQty += ci.qty;
+
             let optionsStr = `${ci.sweetness}`;
             if (ci.ice !== '無') optionsStr += ` / ${ci.ice}`;
             if (ci.toppingText !== '不加料') optionsStr += ` / ${ci.toppingText}`;
@@ -1099,7 +1103,7 @@
             `;
         }
 
-        document.getElementById('confirm-final-total').innerText = `$${totals.finalTotal}`;
+        document.getElementById('confirm-final-total').innerText = `${totalQty} 杯 / $${totals.finalTotal}`;
     }
 
     /* 最終發送至官方 LINE */
