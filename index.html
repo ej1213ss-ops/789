@@ -45,12 +45,44 @@
             border: 1px solid #FFCDD2;
         }
 
-        /* 分店選擇頁面 */
-        .store-select-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 6px solid var(--secondary-color); cursor: pointer; transition: transform 0.2s; }
+        /* 分店選擇頁面樣式修正 */
+        .store-select-card { 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 16px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+            border-left: 6px solid var(--secondary-color); 
+            cursor: pointer; 
+            transition: transform 0.2s, opacity 0.2s, filter 0.2s; 
+            position: relative;
+        }
         .store-select-card:hover { transform: translateY(-2px); }
+        
+        /* 關閉線上點餐的分店樣式 */
+        .store-select-card.closed {
+            opacity: 0.6;
+            filter: grayscale(80%);
+            background: #EFEFEF;
+            border-left-color: #999;
+            cursor: not-allowed;
+        }
+        .store-select-card.closed:hover { transform: none; }
+
         .store-title { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
         .store-distance { font-size: 0.85rem; color: var(--accent-color); font-weight: bold; }
         .store-info { font-size: 0.85rem; color: #666; margin-top: 8px; line-height: 1.4; }
+        
+        .store-status-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 6px;
+        }
+        .store-status-tag.open { background: #E8F5E9; color: #2E7D32; }
+        .store-status-tag.closed { background: #FFCDD2; color: #C62828; }
 
         .user-info-card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 5px solid var(--secondary-color); }
         .user-info-card h3 { font-size: 1rem; margin-bottom: 12px; color: var(--primary-color); }
@@ -299,22 +331,29 @@
         endMinute: 30
     };
 
-    // 判斷目前是否為營業時間（結合時間限制與管理員手動開關）
-    function isStoreOpen() {
-        if (!selectedStore) return false;
+    // 根據 Store ID 判斷是否在營業時間且未被管理員關閉
+    function isStoreOpenById(storeId) {
+        if (!storeId) return false;
         
-        // 讀取管理員設定的開關狀態 (預設為 true)
-        const storeManualStatus = localStorage.getItem(`shuiyun_status_${selectedStore.id}`);
+        // 1. 檢查管理員手動開關設定
+        const storeManualStatus = localStorage.getItem(`shuiyun_status_${storeId}`);
         if (storeManualStatus === 'false') {
-            return false;
+            return false; // 管理員手動關閉
         }
 
+        // 2. 自動判斷營業時間 (除了手動關閉外，其他情況依設定營業時間自動開啟)
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
         const startMinutes = BUSINESS_HOURS.startHour * 60 + BUSINESS_HOURS.startMinute;
         const endMinutes = BUSINESS_HOURS.endHour * 60 + BUSINESS_HOURS.endMinute;
 
         return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    }
+
+    // 判斷當前已選擇的分店是否營業
+    function isStoreOpen() {
+        if (!selectedStore) return false;
+        return isStoreOpenById(selectedStore.id);
     }
 
     // 更新營業狀態提示列
@@ -458,8 +497,13 @@
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                selectStore(targetStore);
-                return;
+                // 如果是透過網址參數指定店家，但該店家未開放，給予提示
+                if (!isStoreOpenById(targetStore.id)) {
+                    alert(`${targetStore.name}目前未開放線上點餐！`);
+                } else {
+                    selectStore(targetStore);
+                    return;
+                }
             }
         }
         initLocationAndStores();
@@ -491,13 +535,22 @@
         }
     }
 
+    // 渲染分店列表（更新：判斷店家營業狀態並變暗）
     function renderStoreList() {
         const container = document.getElementById('store-list-container');
         container.innerHTML = '';
         STORES.forEach(store => {
+            const openStatus = isStoreOpenById(store.id);
+            const isManualClosed = localStorage.getItem(`shuiyun_status_${store.id}`) === 'false';
+
             const card = document.createElement('div');
-            card.className = 'store-select-card';
+            card.className = `store-select-card ${openStatus ? '' : 'closed'}`;
             const distText = store.distance !== undefined ? `距您約 ${store.distance.toFixed(1)} km` : '';
+            
+            let statusBadge = openStatus 
+                ? `<span class="store-status-tag open">🟢 開放線上點餐</span>` 
+                : `<span class="store-status-tag closed">🔴 未開放線上點餐</span>`;
+
             card.innerHTML = `
                 <div class="store-title">
                     <span>🏪 ${store.name}</span>
@@ -505,10 +558,19 @@
                 </div>
                 <div class="store-info">
                     📍 ${store.address}<br>
-                    📞 ${store.phone}
+                    📞 ${store.phone}<br>
+                    ${statusBadge}
                 </div>
             `;
-            card.onclick = () => selectStore(store);
+            
+            card.onclick = () => {
+                if (!openStatus) {
+                    const reason = isManualClosed ? "該分店暫停營業中" : "目前非營業時間";
+                    alert(`【${store.name}】未開放線上點餐（${reason}）`);
+                    return;
+                }
+                selectStore(store);
+            };
             container.appendChild(card);
         });
     }
@@ -1113,9 +1175,8 @@
                 menu: menuData,
                 toppings: toppingData
             })
-        }).catch(err => console.error("菜單同步失敗:", err));
+        });
     }
-</script>
-
+    </script>
 </body>
 </html>
