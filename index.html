@@ -262,7 +262,7 @@
             {
                 id: "madou",
                 name: "麻豆店",
-                liffId: "2011717103-H4l6Arr3", // 麻豆店建立後在此填入 LIFF ID
+                liffId: "2011717103-H4l6Arr3", // 麻豆店專屬 LIFF ID
                 lat: 23.1816,  // 麻豆店緯度
                 lng: 120.2483, // 麻豆店經度
                 address: "台南市麻豆區興中路36號",
@@ -351,6 +351,18 @@
         }
 
         window.onload = function() {
+            // 方案 B：優先解析 URL 參數中的 store 欄位 (例如 index.html?store=jiali)
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeId = urlParams.get('store');
+            
+            if (storeId) {
+                const targetStore = STORES.find(s => s.id === storeId);
+                if (targetStore) {
+                    selectStore(targetStore, false); // 自動進入對應分店頁面
+                    return;
+                }
+            }
+            // 若沒有網址參數，進入定位與分店選擇流程
             initLocationAndStores();
         };
 
@@ -398,13 +410,20 @@
                         📞 ${store.phone}
                     </div>
                 `;
-                card.onclick = () => selectStore(store);
+                card.onclick = () => selectStore(store, true);
                 container.appendChild(card);
             });
         }
 
-        function selectStore(store) {
+        function selectStore(store, updateUrl = true) {
             selectedStore = store;
+
+            // 方案 B：動態更新 URL 網址參數而不重新整理頁面
+            if (updateUrl) {
+                const newUrl = window.location.pathname + '?store=' + store.id;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            }
+
             document.getElementById('store-select-view').style.display = 'none';
             document.getElementById('ordering-view').style.display = 'block';
             document.getElementById('cart-bar').style.display = 'flex';
@@ -417,7 +436,7 @@
             toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${store.id}`)) || defaultToppings;
 
             // 初始化分店對應 LIFF
-            if (store.liffId && store.liffId !== "YOUR_MADOU_LIFF_ID_HERE") {
+            if (store.liffId && !store.liffId.includes("YOUR_")) {
                 liff.init({ liffId: store.liffId }).then(() => {
                     if (liff.isInClient() && liff.isLoggedIn()) {
                         liff.getProfile().then(profile => {
@@ -444,10 +463,17 @@
             if (cartItems.length > 0) {
                 if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
             }
+            
+            // 方案 B：清除網址中的 store 參數
+            const cleanUrl = window.location.pathname;
+            window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+
             document.getElementById('ordering-view').style.display = 'none';
             document.getElementById('cart-bar').style.display = 'none';
             document.getElementById('current-store-tag').style.display = 'none';
             document.getElementById('store-select-view').style.display = 'block';
+            
+            initLocationAndStores();
         }
 
         function isValidPhone(phone) { return /^09\d{8}$/.test(phone); }
