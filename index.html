@@ -45,7 +45,7 @@
             border: 1px solid #FFCDD2;
         }
 
-        /* 分店選擇頁面樣式修正 */
+        /* 分店選擇頁面樣式 */
         .store-select-card { 
             background: var(--card-bg); 
             border-radius: 12px; 
@@ -58,8 +58,6 @@
             position: relative;
         }
         .store-select-card:hover { transform: translateY(-2px); }
-        
-        /* 關閉線上點餐的分店樣式 */
         .store-select-card.closed {
             opacity: 0.6;
             filter: grayscale(80%);
@@ -88,7 +86,7 @@
         .user-info-card h3 { font-size: 1rem; margin-bottom: 12px; color: var(--primary-color); }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 0.85rem; margin-bottom: 4px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #DDD; border-radius: 6px; font-size: 0.95rem; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #DDD; border-radius: 6px; font-size: 0.95rem; background: #FFF; }
         
         .search-box { margin-bottom: 12px; }
         .search-box input { width: 100%; padding: 10px 14px; border: 1px solid #CCC; border-radius: 20px; font-size: 0.9rem; outline: none; }
@@ -125,6 +123,12 @@
         .cart-qty-controller { display: flex; align-items: center; gap: 6px; }
         .cart-qty-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--secondary-color); background: white; color: var(--secondary-color); font-size: 0.9rem; font-weight: bold; cursor: pointer; }
         .cart-qty-input { width: 36px; text-align: center; border: 1px solid #DDD; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+        
+        /* 訂單明細頁面樣式 */
+        .order-summary-card { background: #FFF; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .summary-item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #EEE; font-size: 0.9rem; }
+        .discount-row { color: var(--accent-color); font-weight: bold; background: #FFF3F0; padding: 8px; border-radius: 6px; margin: 8px 0; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; padding-top: 10px; color: var(--primary-color); }
         
         /* Modal 通用樣式 */
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; padding: 16px; }
@@ -205,6 +209,54 @@
             <div class="category-tabs" id="category-tabs"></div>
             <div id="menu-list"></div>
         </div>
+
+        <!-- 步驟 3：雙重確認訂單頁面 (全新頁面，預設隱藏) -->
+        <div id="confirmation-view" style="display:none;">
+            <div class="section-title">
+                <span>📋 訂單雙重確認</span>
+                <button class="btn-small" style="background:#888; color:white;" onclick="backToOrdering()">← 返回修改餐點</button>
+            </div>
+
+            <div class="user-info-card">
+                <h3>👤 訂購資訊</h3>
+                <p style="font-size:0.9rem; line-height:1.6;">
+                    <strong>取餐分店：</strong><span id="confirm-store"></span><br>
+                    <strong>訂購姓名：</strong><span id="confirm-name"></span><br>
+                    <strong>聯絡電話：</strong><span id="confirm-phone"></span>
+                </p>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>取餐方式</label>
+                    <input type="text" value="自取" readonly style="background:#EFEFEF;">
+                </div>
+                <div class="form-group">
+                    <label>付款方式</label>
+                    <input type="text" value="現金" readonly style="background:#EFEFEF;">
+                </div>
+                <div class="form-group">
+                    <label>訂單備註</label>
+                    <div class="note-tags">
+                        <span class="note-tag" onclick="addConfirmNoteTag('不需要吸管')">+ 不需要吸管</span>
+                        <span class="note-tag" onclick="addConfirmNoteTag('需要明細')">+ 需要明細</span>
+                    </div>
+                    <textarea id="confirm-order-note" rows="3" placeholder="請在此輸入特殊需求備註..." style="width:100%; padding:10px; border-radius:6px; border:1px solid #DDD; font-size:0.9rem; resize:vertical;"></textarea>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <span>🛒 飲品金額明細</span>
+            </div>
+            
+            <div class="order-summary-card">
+                <div id="confirm-item-list"></div>
+                <div id="confirm-discount-info"></div>
+                <div class="total-row">
+                    <span>總計金額</span>
+                    <span id="confirm-final-total" style="color:var(--accent-color);">$0</span>
+                </div>
+            </div>
+
+            <button class="submit-btn" style="width:100%; padding:14px; font-size:1.1rem; border-radius:10px; margin-top:10px;" onclick="submitOrderToLine()">發送至官方 LINE 🚀</button>
+        </div>
     </div>
 
     <!-- 購物車抽屜 -->
@@ -223,28 +275,7 @@
             <div>共 <span id="total-qty">0</span> 杯 <u>(點擊檢視明細)</u></div>
             <div>總金額：<span class="total-price" id="total-amount">$0</span></div>
         </div>
-        <button class="submit-btn" id="submit-btn" onclick="openNoteModal()">發送至官方 LINE</button>
-    </div>
-
-    <!-- 備註 Modal -->
-    <div class="modal" id="note-modal">
-        <div class="modal-content">
-            <h3>📝 訂單備註事項</h3>
-            <p style="font-size:0.85rem; color:#666; margin-top:4px;">是否有其他特殊需求？</p>
-
-            <div class="note-tags">
-                <span class="note-tag" onclick="addNoteTag('不需要吸管')">+ 不需要吸管</span>
-                <span class="note-tag" onclick="addNoteTag('需要明細')">+ 需要明細</span>
-            </div>
-
-            <textarea id="order-note" rows="4" placeholder="請在此輸入您的備註說明..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #CCC; font-size:0.9rem; resize:vertical;"></textarea>
-
-            <div style="display:flex; gap:10px; margin-top:16px;">
-                <button class="btn-small" style="flex:1; background:#888; color:white; padding:10px;" onclick="submitOrder('')">無備註直接發送</button>
-                <button class="btn-small btn-success" style="flex:1; padding:10px;" onclick="confirmNoteAndSubmit()">確認發送訂購 🚀</button>
-            </div>
-            <button class="btn-small btn-close" onclick="closeNoteModal()" style="margin-top:8px;">返回修改餐點</button>
-        </div>
+        <button class="submit-btn" id="submit-btn" onclick="goToConfirmationPage()">確認訂單</button>
     </div>
 
     <!-- 管理員驗證 Modal -->
@@ -331,17 +362,13 @@
         endMinute: 30
     };
 
-    // 根據 Store ID 判斷是否在營業時間且未被管理員關閉
     function isStoreOpenById(storeId) {
         if (!storeId) return false;
-        
-        // 1. 檢查管理員手動開關設定
         const storeManualStatus = localStorage.getItem(`shuiyun_status_${storeId}`);
         if (storeManualStatus === 'false') {
-            return false; // 管理員手動關閉
+            return false;
         }
 
-        // 2. 自動判斷營業時間 (除了手動關閉外，其他情況依設定營業時間自動開啟)
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
         const startMinutes = BUSINESS_HOURS.startHour * 60 + BUSINESS_HOURS.startMinute;
@@ -350,13 +377,11 @@
         return currentMinutes >= startMinutes && currentMinutes < endMinutes;
     }
 
-    // 判斷當前已選擇的分店是否營業
     function isStoreOpen() {
         if (!selectedStore) return false;
         return isStoreOpenById(selectedStore.id);
     }
 
-    // 更新營業狀態提示列
     function renderBusinessStatus() {
         const bar = document.getElementById('business-status-bar');
         if (!bar || !selectedStore) return;
@@ -378,7 +403,6 @@
         }
     }
 
-    // 分店設定庫
     const STORES = [
         {
             id: "jiali",
@@ -493,11 +517,9 @@
 
     window.onload = function() {
         const storeId = getQueryParam('store');
-        
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                // 如果是透過網址參數指定店家，但該店家未開放，給予提示
                 if (!isStoreOpenById(targetStore.id)) {
                     alert(`${targetStore.name}目前未開放線上點餐！`);
                 } else {
@@ -535,7 +557,6 @@
         }
     }
 
-    // 渲染分店列表（更新：判斷店家營業狀態並變暗）
     function renderStoreList() {
         const container = document.getElementById('store-list-container');
         container.innerHTML = '';
@@ -580,6 +601,7 @@
 
         document.getElementById('store-select-view').style.display = 'none';
         document.getElementById('ordering-view').style.display = 'block';
+        document.getElementById('confirmation-view').style.display = 'none';
         document.getElementById('cart-bar').style.display = 'flex';
         
         const currentTag = document.getElementById('current-store-tag');
@@ -665,17 +687,13 @@
     function openAdminModal() {
         if (!selectedStore) { alert("請先選擇要管理的分店！"); return; }
         document.getElementById('admin-store-title').innerText = selectedStore.name;
-        
-        // 載入與渲染營業狀態按鈕 UI
         updateAdminStatusUI();
-
         renderAdminToppingsList();
         renderAdminItemsList();
         renderNewItemSweetnessOptions();
         document.getElementById('admin-modal').style.display = 'flex';
     }
 
-    // 更新後台開關按鈕樣式
     function updateAdminStatusUI() {
         if (!selectedStore) return;
         const status = localStorage.getItem(`shuiyun_status_${selectedStore.id}`) !== 'false';
@@ -691,7 +709,6 @@
         }
     }
 
-    // 後台設定分店營業狀態
     function setStoreBusinessStatus(isOpen) {
         if (!selectedStore) return;
         localStorage.setItem(`shuiyun_status_${selectedStore.id}`, isOpen ? 'true' : 'false');
@@ -863,6 +880,7 @@
             cartItems.push({
                 itemId: item.id,
                 name: item.name,
+                category: item.category,
                 basePrice: item.price,
                 sweetness: sweetness,
                 ice: ice,
@@ -885,16 +903,53 @@
         }, 600);
     }
 
-    function updateCartSummary() {
-        let totalQty = 0;
-        let totalAmount = 0;
+    /* 計算包含買五送一的金額與優惠資訊 */
+    function calculateOrderTotals() {
+        let rawTotal = 0;
+        let drinkPrices = [];
+        let totalDrinkQty = 0;
+
         cartItems.forEach(ci => {
             const unitPrice = ci.basePrice + ci.toppingPrice;
-            totalQty += ci.qty;
-            totalAmount += unitPrice * ci.qty;
+            const subtotal = unitPrice * ci.qty;
+            rawTotal += subtotal;
+
+            // 非"其他"類別視為飲料，參與買五送一
+            if (ci.category !== "其他") {
+                totalDrinkQty += ci.qty;
+                for (let i = 0; i < ci.qty; i++) {
+                    drinkPrices.push(unitPrice);
+                }
+            }
         });
+
+        let discountAmount = 0;
+        let minPrice = 0;
+
+        // 買五送一：當飲料總杯數 >= 6 杯時，扣除最低單價品項
+        if (totalDrinkQty >= 6 && drinkPrices.length > 0) {
+            minPrice = Math.min(...drinkPrices);
+            discountAmount = minPrice;
+        }
+
+        const finalTotal = rawTotal - discountAmount;
+        return {
+            rawTotal,
+            discountAmount,
+            minPrice,
+            finalTotal,
+            totalDrinkQty
+        };
+    }
+
+    function updateCartSummary() {
+        let totalQty = 0;
+        cartItems.forEach(ci => totalQty += ci.qty);
+        
+        const totals = calculateOrderTotals();
+
         document.getElementById('total-qty').innerText = totalQty;
-        document.getElementById('total-amount').innerText = `$${totalAmount}`;
+        document.getElementById('total-amount').innerText = `$${totals.finalTotal}`;
         renderCartDrawerList();
     }
 
@@ -951,7 +1006,8 @@
         updateCartSummary();
     }
 
-    function openNoteModal() {
+    /* 跳轉至雙重確認頁面 */
+    function goToConfirmationPage() {
         if (!isStoreOpen()) {
             alert("目前非營業時間，無法送出訂單！");
             return;
@@ -964,23 +1020,75 @@
         if (!phone) { alert("請填寫聯絡電話！"); return; }
         if (!isValidPhone(phone)) { alert("電話號碼格式錯誤！請輸入以 09 開頭且總長度為 10 位數的手機號碼。"); return; }
 
-        document.getElementById('note-modal').style.display = 'flex';
+        toggleCartDrawer(false);
+
+        // 填入確認頁面資訊
+        document.getElementById('confirm-store').innerText = selectedStore.name;
+        document.getElementById('confirm-name').innerText = name;
+        document.getElementById('confirm-phone').innerText = phone;
+
+        // 渲染品項明細與活動折扣
+        renderConfirmationDetails();
+
+        // 切換視圖
+        document.getElementById('ordering-view').style.display = 'none';
+        document.getElementById('confirmation-view').style.display = 'block';
+        document.getElementById('cart-bar').style.display = 'none';
+        window.scrollTo(0, 0);
     }
 
-    function closeNoteModal() { document.getElementById('note-modal').style.display = 'none'; }
+    function backToOrdering() {
+        document.getElementById('confirmation-view').style.display = 'none';
+        document.getElementById('ordering-view').style.display = 'block';
+        document.getElementById('cart-bar').style.display = 'flex';
+    }
 
-    function addNoteTag(tagText) {
-        const textarea = document.getElementById('order-note');
+    function addConfirmNoteTag(tagText) {
+        const textarea = document.getElementById('confirm-order-note');
         if (textarea.value) textarea.value += '，' + tagText;
         else textarea.value = tagText;
     }
 
-    function confirmNoteAndSubmit() {
-        const noteText = document.getElementById('order-note').value.trim();
-        submitOrder(noteText);
+    function renderConfirmationDetails() {
+        const container = document.getElementById('confirm-item-list');
+        const discountContainer = document.getElementById('confirm-discount-info');
+        container.innerHTML = '';
+        discountContainer.innerHTML = '';
+
+        cartItems.forEach((ci, idx) => {
+            const unitPrice = ci.basePrice + ci.toppingPrice;
+            const subtotal = unitPrice * ci.qty;
+            let optionsStr = `${ci.sweetness}`;
+            if (ci.ice !== '無') optionsStr += ` / ${ci.ice}`;
+            if (ci.toppingText !== '不加料') optionsStr += ` / ${ci.toppingText}`;
+
+            const row = document.createElement('div');
+            row.className = 'summary-item-row';
+            row.innerHTML = `
+                <div>
+                    <strong>${idx + 1}. ${ci.name} x${ci.qty}</strong><br>
+                    <small style="color:#666;">└ ${optionsStr}</small>
+                </div>
+                <div style="font-weight:bold;">$${subtotal}</div>
+            `;
+            container.appendChild(row);
+        });
+
+        const totals = calculateOrderTotals();
+
+        if (totals.discountAmount > 0) {
+            discountContainer.innerHTML = `
+                <div class="discount-row">
+                    🎉 買五送一活動滿額折扣：已折抵 lowest 價品項 -$${totals.discountAmount}
+                </div>
+            `;
+        }
+
+        document.getElementById('confirm-final-total').innerText = `$${totals.finalTotal}`;
     }
 
-    function submitOrder(note) {
+    /* 最終發送至官方 LINE */
+    function submitOrderToLine() {
         if (!isStoreOpen()) {
             alert("目前非營業時間，無法送出訂單！");
             return;
@@ -988,31 +1096,33 @@
 
         const name = document.getElementById('cust-name').value.trim();
         const phone = document.getElementById('cust-phone').value.trim();
-
-        if (!name) { alert("請填寫姓名！"); return; }
-        if (!phone) { alert("請填寫電話！"); return; }
-        if (!isValidPhone(phone)) { alert("電話號碼格式不正確！"); return; }
+        const note = document.getElementById('confirm-order-note').value.trim();
 
         localStorage.setItem('shuiyun_cust_phone', phone);
 
+        const totals = calculateOrderTotals();
         let totalQty = 0;
-        let totalAmount = 0;
 
         let orderDetailMsg = `🍵 水云茶堂(${selectedStore.name}) - 訂單確認\n--------------------------\n`;
-        orderDetailMsg += `👤 訂購人：${name}\n📞 電 話：${phone}\n--------------------------\n🛒 點餐明細：\n`;
+        orderDetailMsg += `👤 訂購人：${name}\n📞 電 話：${phone}\n🚗 取餐方式：自取\n💵 付款方式：現金\n--------------------------\n🛒 點餐明細：\n`;
 
         cartItems.forEach((item, index) => {
             const unitPrice = item.basePrice + item.toppingPrice;
             const itemTotal = unitPrice * item.qty;
             totalQty += item.qty;
-            totalAmount += itemTotal;
             let optionsStr = `${item.sweetness}`;
             if (item.ice !== '無') optionsStr += ` / ${item.ice}`;
             if (item.toppingText !== '不加料') optionsStr += ` / ${item.toppingText}`;
             orderDetailMsg += `${index + 1}. ${item.name} x${item.qty} ($${itemTotal})\n   └ ${optionsStr}\n`;
         });
 
-        orderDetailMsg += `--------------------------\n📊 總計：${totalQty} 份，共 $${totalAmount} 元\n`;
+        orderDetailMsg += `--------------------------\n`;
+
+        if (totals.discountAmount > 0) {
+            orderDetailMsg += `🎁 買五送一優惠：買6杯折扣最低價 -$${totals.discountAmount}\n`;
+        }
+
+        orderDetailMsg += `📊 總計：${totalQty} 份，共 $${totals.finalTotal} 元\n`;
         if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
         if (GOOGLE_SCRIPT_URL) {
@@ -1025,8 +1135,11 @@
                     storeName: selectedStore.name,
                     customerName: name,
                     customerPhone: phone,
+                    paymentMethod: "現金",
+                    pickupMethod: "自取",
                     items: cartItems,
-                    totalAmount: totalAmount,
+                    totalAmount: totals.finalTotal,
+                    discountAmount: totals.discountAmount,
                     note: note
                 })
             }).catch(err => console.error("GAS 寫入失敗:", err));
@@ -1034,13 +1147,13 @@
 
         if (typeof liff !== 'undefined' && liff.isInClient()) {
             liff.sendMessages([{ type: 'text', text: orderDetailMsg }]).then(() => {
-                alert("訂單已發送！");
+                alert("訂單已成功發送至官方 LINE！");
                 liff.closeWindow();
             }).catch((err) => {
-                alert("發送失敗，請複製明細：\n\n" + orderDetailMsg);
+                alert("發送失敗，請複製明細後手動傳送：\n\n" + orderDetailMsg);
             });
         } else {
-            alert(`非 LINE 環境發送測試 [發送目標：${selectedStore.name}]：\n\n` + orderDetailMsg);
+            alert(`非 LINE 環境測試發送 [目標：${selectedStore.name}]：\n\n` + orderDetailMsg);
         }
     }
 
@@ -1086,7 +1199,6 @@
     function saveToppingData() {
         if (!selectedStore) return;
         localStorage.setItem(`shuiyun_toppings_${selectedStore.id}`, JSON.stringify(toppingData));
-        syncMenuToGoogleSheets();
     }
 
     function renderAdminItemsList() {
@@ -1115,67 +1227,56 @@
         });
     }
 
+    function renderNewItemSweetnessOptions() {
+        const box = document.getElementById('new-item-sweetness-box');
+        box.innerHTML = ALL_SWEETNESS_OPTIONS.map(s => `
+            <label><input type="checkbox" value="${s}" checked> ${s}</label>
+        `).join('');
+    }
+
     function updateItemName(idx, val) { menuData[idx].name = val; saveMenuData(); }
     function updateItemPrice(idx, val) { menuData[idx].price = Number(val) || 0; saveMenuData(); }
     function updateItemCategory(idx, val) { menuData[idx].category = val; saveMenuData(); }
     function toggleItemSweetness(idx, sweetness, isChecked) {
-        if (!Array.isArray(menuData[idx].allowedSweetness)) menuData[idx].allowedSweetness = [...ALL_SWEETNESS_OPTIONS];
+        let currentOpts = [...getItemSweetnessOptions(menuData[idx])];
         if (isChecked) {
-            if (!menuData[idx].allowedSweetness.includes(sweetness)) menuData[idx].allowedSweetness.push(sweetness);
+            if (!currentOpts.includes(sweetness)) currentOpts.push(sweetness);
         } else {
-            menuData[idx].allowedSweetness = menuData[idx].allowedSweetness.filter(s => s !== sweetness);
+            currentOpts = currentOpts.filter(s => s !== sweetness);
         }
+        menuData[idx].allowedSweetness = currentOpts;
         saveMenuData();
     }
+
     function deleteMenuItem(idx) {
-        if (confirm("確定要刪除此品項？")) {
+        if (confirm(`確定要刪除「${menuData[idx].name}」嗎？`)) {
             menuData.splice(idx, 1);
             saveMenuData();
             renderAdminItemsList();
         }
     }
-    function renderNewItemSweetnessOptions() {
-        document.getElementById('new-item-sweetness-box').innerHTML = ALL_SWEETNESS_OPTIONS.map((s, idx) => `
-            <label><input type="checkbox" value="${s}" id="new-sweet-${idx}" checked> ${s}</label>
-        `).join('');
-    }
+
     function addMenuItem() {
         const name = document.getElementById('new-item-name').value.trim();
-        const price = Number(document.getElementById('new-item-price').value);
+        const price = Number(document.getElementById('new-item-price').value) || 0;
         const category = document.getElementById('new-item-category').value;
+        const checkboxes = document.querySelectorAll('#new-item-sweetness-box input[type="checkbox"]:checked');
+        const allowedSweetness = Array.from(checkboxes).map(cb => cb.value);
+
         if (!name) return alert("請輸入品項名稱");
 
-        let selectedSweetness = [];
-        ALL_SWEETNESS_OPTIONS.forEach((s, idx) => {
-            if (document.getElementById(`new-sweet-${idx}`).checked) selectedSweetness.push(s);
-        });
-
-        menuData.push({ id: Date.now(), name: name, price: price || 0, category: category, allowedSweetness: selectedSweetness });
+        const newId = menuData.length > 0 ? Math.max(...menuData.map(i => i.id)) + 1 : 1;
+        menuData.push({ id: newId, name, price, category, allowedSweetness });
         saveMenuData();
+        
         document.getElementById('new-item-name').value = '';
         document.getElementById('new-item-price').value = '';
         renderAdminItemsList();
-        alert("新增成功！");
     }
+
     function saveMenuData() {
         if (!selectedStore) return;
         localStorage.setItem(`shuiyun_menu_${selectedStore.id}`, JSON.stringify(menuData));
-        syncMenuToGoogleSheets();
-    }
-
-    function syncMenuToGoogleSheets() {
-        if (!GOOGLE_SCRIPT_URL || !selectedStore) return;
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                action: "updateMenu",
-                storeName: selectedStore.name,
-                menu: menuData,
-                toppings: toppingData
-            })
-        });
     }
     </script>
 </body>
