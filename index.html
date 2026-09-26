@@ -238,6 +238,7 @@
                     <div class="note-tags">
                         <span class="note-tag" onclick="addConfirmNoteTag('不需要吸管')">+ 不需要吸管</span>
                         <span class="note-tag" onclick="addConfirmNoteTag('需要明細')">+ 需要明細</span>
+                        <span class="note-tag" onclick="addConfirmNoteTag('自取時間')">+ 自取時間</span>
                     </div>
                     <textarea id="confirm-order-note" rows="3" placeholder="請在此輸入特殊需求備註..." style="width:100%; padding:10px; border-radius:6px; border:1px solid #DDD; font-size:0.9rem; resize:vertical;"></textarea>
                 </div>
@@ -359,8 +360,8 @@
     const BUSINESS_HOURS = {
         startHour: 8,   // 開始時間 (08:30)
         startMinute: 30,
-        endHour: 21,     // 結束時間 (21:30)
-        endMinute: 30
+        endHour: 24,     // 結束時間 (24:00)
+        endMinute: 00
     };
 
     function isStoreOpenById(storeId) {
