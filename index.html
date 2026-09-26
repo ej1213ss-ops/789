@@ -1106,7 +1106,7 @@
         document.getElementById('confirm-final-total').innerText = `${totalQty} 杯 / $${totals.finalTotal}`;
     }
 
-    /* 最終發送至官方 LINE */
+    /* 最終發送至官方 LINE 與串接 Apps Script 後端 */
     function submitOrderToLine() {
         if (!isStoreOpen()) {
             alert("目前非營業時間，無法送出訂單！");
@@ -1144,6 +1144,7 @@
         orderDetailMsg += `📊 總計：${totalQty} 份，共 $${totals.finalTotal} 元\n`;
         if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
+        // 將訂單資料發送至 Apps Script 後端 API
         if (GOOGLE_SCRIPT_URL) {
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
@@ -1161,9 +1162,14 @@
                     discountAmount: totals.discountAmount,
                     note: note
                 })
-            }).catch(err => console.error("GAS 寫入失敗:", err));
+            }).then(() => {
+                console.log("訂單已成功送至後端 API");
+            }).catch(err => {
+                console.error("GAS 寫入失敗:", err);
+            });
         }
 
+        // 透過 LIFF 發送訊息至官方 LINE
         if (typeof liff !== 'undefined' && liff.isInClient()) {
             liff.sendMessages([{ type: 'text', text: orderDetailMsg }]).then(() => {
                 alert("訂單已成功發送至官方 LINE！");
