@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>水云茶堂 - 訂單確認接單</title>
+  <title>水雲茶堂 - 訂單確認接單</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -25,11 +25,7 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
       text-align: center;
     }
-    h2 {
-      color: #3D2314;
-      font-size: 1.4rem;
-      margin-bottom: 10px;
-    }
+    h2 { color: #3D2314; font-size: 1.4rem; margin-bottom: 10px; }
     .order-badge {
       display: inline-block;
       background: #EFEBE4;
@@ -40,11 +36,7 @@
       border-radius: 20px;
       margin-bottom: 24px;
     }
-    .loading-text {
-      color: #666;
-      font-size: 0.95rem;
-      margin: 20px 0;
-    }
+    .loading-text { color: #666; font-size: 0.95rem; margin: 20px 0; }
     input[type="text"] {
       width: 100%;
       padding: 14px;
@@ -55,9 +47,7 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    input[type="text"]:focus {
-      border-color: #06C755;
-    }
+    input[type="text"]:focus { border-color: #06C755; }
     button {
       width: 100%;
       padding: 14px;
@@ -68,35 +58,20 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    .btn-active {
-      background: #06C755;
-      color: white;
-    }
-    .btn-active:hover {
-      background: #05b14c;
-    }
-    .btn-disabled {
-      background: #E0E0E0;
-      color: #777777;
-      cursor: not-allowed;
-    }
-    .status-box {
-      margin-top: 16px;
-      font-size: 0.95rem;
-      line-height: 1.5;
-      font-weight: 500;
-    }
+    .btn-active { background: #06C755; color: white; }
+    .btn-active:hover { background: #05b14c; }
+    .btn-disabled { background: #E0E0E0; color: #777777; cursor: not-allowed; }
+    .status-box { margin-top: 16px; font-size: 0.95rem; line-height: 1.5; font-weight: 500; }
   </style>
 </head>
 <body>
-
   <div class="card">
     <h2>🍵 訂單接收確認</h2>
     <div class="order-badge" id="display-order-id">載入單號中...</div>
-    
+
     <!-- 載入中狀態 -->
     <div id="loading" class="loading-text">⏳ 正在查詢訂單狀態...</div>
-    
+
     <!-- 未接單：填寫姓名與接單按鈕 -->
     <div id="action-area" style="display: none;">
       <input type="text" id="staff-name" placeholder="請輸入店員姓名 (選填)">
@@ -111,9 +86,8 @@
   </div>
 
   <script>
-    // ⚠️ 請填入您的 Google Apps Script 部署網址 (Web App URL)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwK6fhy7-56eW-vxGaA3NnzTneZ2_dptR1B7OtG-O7MRLhyzz8IcS-UhuFwTV5PXDIb/exec";
-    // 從網址獲取 ?orderId=... 參數
+
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('orderId');
 
@@ -123,10 +97,8 @@
         document.getElementById('display-order-id').innerText = "無效訂單";
         return;
       }
-
       document.getElementById('display-order-id').innerText = "訂單編號：" + orderId;
 
-      // 查詢該單號是否已被接收
       fetch(`${GAS_API_URL}?action=checkStatus&orderId=${encodeURIComponent(orderId)}`)
         .then(res => res.json())
         .then(data => {
@@ -143,7 +115,6 @@
         });
     };
 
-    // 點擊確認接單
     function handleAccept() {
       const btn = document.getElementById('accept-btn');
       btn.disabled = true;
@@ -169,11 +140,9 @@
         });
     }
 
-    // 顯示已接單鎖定畫面
     function showAcceptedState(staffName) {
       document.getElementById('action-area').style.display = 'none';
       document.getElementById('status-area').style.display = 'block';
-      
       const nameText = staffName || "店員";
       document.getElementById('disabled-btn').innerText = "🔒 已接收訂單 (" + nameText + ")";
       document.getElementById('status-desc').innerText = "此筆訂單先前已由 「" + nameText + "」 確認接收，請勿重複製作。";
