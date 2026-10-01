@@ -350,7 +350,7 @@
             <button class="btn-small btn-close" onclick="closeAdminModal()">儲存並關閉後台</button>
         </div>
     </div>
-
+    
     <script>
     const ADMIN_USER = "amg8288";
     const ADMIN_PWD = "8888";
@@ -920,7 +920,6 @@
             const subtotal = unitPrice * ci.qty;
             rawTotal += subtotal;
 
-            // 非"其他"類別視為飲料，參與買五送一
             if (ci.category !== "其他") {
                 totalDrinkQty += ci.qty;
                 for (let i = 0; i < ci.qty; i++) {
@@ -929,10 +928,8 @@
             }
         });
 
-        // 按價格從低到高排序
         drinkPrices.sort((a, b) => a - b);
 
-        // 每 6 杯享有 1 杯免費（買五送一），12 杯享 2 杯，以此類推
         const freeSets = Math.floor(totalDrinkQty / 6);
         let discountAmount = 0;
 
@@ -1032,15 +1029,12 @@
 
         toggleCartDrawer(false);
 
-        // 填入確認頁面資訊
         document.getElementById('confirm-store').innerText = selectedStore.name;
         document.getElementById('confirm-name').innerText = name;
         document.getElementById('confirm-phone').innerText = phone;
 
-        // 渲染品項明細與活動折扣
         renderConfirmationDetails();
 
-        // 切換視圖
         document.getElementById('ordering-view').style.display = 'none';
         document.getElementById('confirmation-view').style.display = 'block';
         document.getElementById('cart-bar').style.display = 'none';
@@ -1090,7 +1084,6 @@
 
         const totals = calculateOrderTotals();
 
-        // 已滿組數折扣提示
         if (totals.discountAmount > 0) {
             discountContainer.innerHTML += `
                 <div class="discount-row">
@@ -1099,7 +1092,6 @@
             `;
         }
 
-        // 差 1 杯湊滿下一組買五送一（例如：5, 11, 17... 杯）
         if (totals.totalDrinkQty > 0 && totals.totalDrinkQty % 6 === 5) {
             discountContainer.innerHTML += `
                 <div class="promo-hint-row">
@@ -1111,27 +1103,15 @@
         document.getElementById('confirm-final-total').innerText = `${totalQty} 杯 / $${totals.finalTotal}`;
     }
 
-    // 2. 顧客點擊「送出訂單」時的 Fetch 邏輯
-    function submitOrder() {
-        const totals = calculateOrderTotals();
-        const orderData = {
-            userId: currentUserId, // 👈 關鍵：帶入顧客的 User ID
-            customerName: document.getElementById('cust-name').value.trim(),
-            customerPhone: document.getElementById('cust-phone').value.trim(),
-            storeName: selectedStore ? selectedStore.name : "",
-            note: document.getElementById('confirm-order-note').value.trim(),
-            items: cartItems, // 購物車項目陣列
-            totalAmount: totals.finalTotal
-        };
+    /* 統一發送至 Google Apps Script 後端的函式 */
+    function sendOrderToGoogleScript(orderData) {
+        if (!GOOGLE_SCRIPT_URL) return Promise.reject("未設定 GOOGLE_SCRIPT_URL");
 
-        fetch("https://script.google.com/macros/s/AKfycbwqoO6fllZll9PqNlM5y4A2X-XG/exec", {
+        return fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(orderData)
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert("訂單送出成功！");
         });
     }
 
@@ -1173,34 +1153,29 @@
         orderDetailMsg += `📊 總計：${totalQty} 份，共 $${totals.finalTotal} 元\n`;
         if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
-        // 呼叫包含 userId 的 submitOrder 函式送出資料
-        submitOrder();
+        // 整理傳送至 Apps Script 的 payload
+        const payload = {
+            action: "createOrder",
+            userId: currentUserId,
+            storeName: selectedStore ? selectedStore.name : "",
+            customerName: name,
+            customerPhone: phone,
+            paymentMethod: "現金",
+            pickupMethod: "自取",
+            items: cartItems,
+            totalAmount: totals.finalTotal,
+            discountAmount: totals.discountAmount,
+            note: note
+        };
 
-        // 將訂單資料發送至原有後端 API（若有設定）
-        if (GOOGLE_SCRIPT_URL) {
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({
-                    action: "createOrder",
-                    userId: currentUserId,
-                    storeName: selectedStore.name,
-                    customerName: name,
-                    customerPhone: phone,
-                    paymentMethod: "現金",
-                    pickupMethod: "自取",
-                    items: cartItems,
-                    totalAmount: totals.finalTotal,
-                    discountAmount: totals.discountAmount,
-                    note: note
-                })
-            }).then(() => {
-                console.log("訂單已成功送至後端 API");
-            }).catch(err => {
+        // 背景非同步送出至 Google Apps Script
+        sendOrderToGoogleScript(payload)
+            .then(() => {
+                console.log("訂單已發送至 Apps Script 後端");
+            })
+            .catch(err => {
                 console.error("GAS 寫入失敗:", err);
             });
-        }
 
         // 透過 LIFF 發送訊息至官方 LINE
         if (typeof liff !== 'undefined' && liff.isInClient()) {
