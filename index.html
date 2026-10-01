@@ -354,6 +354,7 @@
     <script>
     const ADMIN_USER = "amg8288";
     const ADMIN_PWD = "8888";
+    // 已更新為您最新的 Apps Script 部署網址
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwK6fhy7-56eW-vxGaA3NnzTneZ2_dptR1B7OtG-O7MRLhyzz8IcS-UhuFwTV5PXDIb/exec";
 
     // 1. 初始化 LIFF 並取得顧客的 userId
@@ -629,7 +630,7 @@
                     isLiffInitialized = true;
                     if (liff.isLoggedIn()) {
                         liff.getProfile().then(profile => {
-                            currentUserId = profile.userId; // 取得顧客 LINE User ID
+                            currentUserId = profile.userId;
                             if (profile.displayName && !document.getElementById('cust-name').value) {
                                 document.getElementById('cust-name').value = profile.displayName;
                             }
@@ -909,7 +910,6 @@
         }, 600);
     }
 
-    /* 計算包含買五送一的金額與優惠資訊 */
     function calculateOrderTotals() {
         let rawTotal = 0;
         let drinkPrices = [];
@@ -1013,7 +1013,6 @@
         updateCartSummary();
     }
 
-    /* 跳轉至雙重確認頁面 */
     function goToConfirmationPage() {
         if (!isStoreOpen()) {
             alert("目前非營業時間，無法送出訂單！");
@@ -1103,7 +1102,7 @@
         document.getElementById('confirm-final-total').innerText = `${totalQty} 杯 / $${totals.finalTotal}`;
     }
 
-    /* 統一發送至 Google Apps Script 後端的函式 */
+    // 關鍵修復：使用 no-cors 模式與 text/plain 避免 CORS 阻檔
     function sendOrderToGoogleScript(orderData) {
         if (!GOOGLE_SCRIPT_URL) return Promise.reject("未設定 GOOGLE_SCRIPT_URL");
 
@@ -1115,7 +1114,6 @@
         });
     }
 
-    /* 最終發送至官方 LINE 與串接 Apps Script 後端 */
     function submitOrderToLine() {
         if (!isStoreOpen()) {
             alert("目前非營業時間，無法送出訂單！");
@@ -1153,7 +1151,6 @@
         orderDetailMsg += `📊 總計：${totalQty} 份，共 $${totals.finalTotal} 元\n`;
         if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
-        // 整理傳送至 Apps Script 的 payload
         const payload = {
             action: "createOrder",
             userId: currentUserId,
@@ -1168,16 +1165,16 @@
             note: note
         };
 
-        // 背景非同步送出至 Google Apps Script
+        // 背景發送 API 資料
         sendOrderToGoogleScript(payload)
             .then(() => {
-                console.log("訂單已發送至 Apps Script 後端");
+                console.log("訂單已成功傳送至 Apps Script");
             })
             .catch(err => {
-                console.error("GAS 寫入失敗:", err);
+                console.error("GAS 傳送失敗:", err);
             });
 
-        // 透過 LIFF 發送訊息至官方 LINE
+        // LIFF 訊息推送
         if (typeof liff !== 'undefined' && liff.isInClient()) {
             liff.sendMessages([{ type: 'text', text: orderDetailMsg }]).then(() => {
                 alert("訂單已成功發送至官方 LINE！");
