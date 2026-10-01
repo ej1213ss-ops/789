@@ -356,6 +356,9 @@
     const ADMIN_PWD = "8888";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwK6fhy7-56eW-vxGaA3NnzTneZ2_dptR1B7OtG-O7MRLhyzz8IcS-UhuFwTV5PXDIb/exec";
 
+    // 1. 初始化 LIFF 並取得顧客的 userId
+    let currentUserId = "";
+
     // 營業時間設定 (24小時制)
     const BUSINESS_HOURS = {
         startHour: 8,   // 開始時間 (08:30)
@@ -624,8 +627,9 @@
             if (!isLiffInitialized) {
                 liff.init({ liffId: store.liffId }).then(() => {
                     isLiffInitialized = true;
-                    if (liff.isInClient() && liff.isLoggedIn()) {
+                    if (liff.isLoggedIn()) {
                         liff.getProfile().then(profile => {
+                            currentUserId = profile.userId; // 取得顧客 LINE User ID
                             if (profile.displayName && !document.getElementById('cust-name').value) {
                                 document.getElementById('cust-name').value = profile.displayName;
                             }
@@ -1107,6 +1111,30 @@
         document.getElementById('confirm-final-total').innerText = `${totalQty} 杯 / $${totals.finalTotal}`;
     }
 
+    // 2. 顧客點擊「送出訂單」時的 Fetch 邏輯
+    function submitOrder() {
+        const totals = calculateOrderTotals();
+        const orderData = {
+            userId: currentUserId, // 👈 關鍵：帶入顧客的 User ID
+            customerName: document.getElementById('cust-name').value.trim(),
+            customerPhone: document.getElementById('cust-phone').value.trim(),
+            storeName: selectedStore ? selectedStore.name : "",
+            note: document.getElementById('confirm-order-note').value.trim(),
+            items: cartItems, // 購物車項目陣列
+            totalAmount: totals.finalTotal
+        };
+
+        fetch("https://script.google.com/macros/s/AKfycbwqoO6fllZll9PqNlM5y4A2X-XG/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: JSON.stringify(orderData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert("訂單送出成功！");
+        });
+    }
+
     /* 最終發送至官方 LINE 與串接 Apps Script 後端 */
     function submitOrderToLine() {
         if (!isStoreOpen()) {
@@ -1145,7 +1173,10 @@
         orderDetailMsg += `📊 總計：${totalQty} 份，共 $${totals.finalTotal} 元\n`;
         if (note) orderDetailMsg += `📝 備註：${note}\n`;
 
-        // 將訂單資料發送至 Apps Script 後端 API
+        // 呼叫包含 userId 的 submitOrder 函式送出資料
+        submitOrder();
+
+        // 將訂單資料發送至原有後端 API（若有設定）
         if (GOOGLE_SCRIPT_URL) {
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
@@ -1153,6 +1184,7 @@
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({
                     action: "createOrder",
+                    userId: currentUserId,
                     storeName: selectedStore.name,
                     customerName: name,
                     customerPhone: phone,
