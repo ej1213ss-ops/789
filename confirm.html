@@ -1,153 +1,161 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>水雲茶堂 - 訂單確認接單</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #F7F5F0;
-      color: #333;
-      padding: 40px 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .card {
-      background: #FFFFFF;
-      padding: 28px 24px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-      text-align: center;
-    }
-    h2 { color: #3D2314; font-size: 1.4rem; margin-bottom: 10px; }
-    .order-badge {
-      display: inline-block;
-      background: #EFEBE4;
-      color: #8C6239;
-      font-size: 0.95rem;
-      font-weight: bold;
-      padding: 6px 14px;
-      border-radius: 20px;
-      margin-bottom: 24px;
-    }
-    .loading-text { color: #666; font-size: 0.95rem; margin: 20px 0; }
-    input[type="text"] {
-      width: 100%;
-      padding: 14px;
-      margin-bottom: 16px;
-      border: 1px solid #DDD;
-      border-radius: 8px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input[type="text"]:focus { border-color: #06C755; }
-    button {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-active { background: #06C755; color: white; }
-    .btn-active:hover { background: #05b14c; }
-    .btn-disabled { background: #E0E0E0; color: #777777; cursor: not-allowed; }
-    .status-box { margin-top: 16px; font-size: 0.95rem; line-height: 1.5; font-weight: 500; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水雲茶堂 - 訂單確認接單</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f7f5f0;
+            color: #333;
+            padding: 40px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: #ffffff;
+            padding: 28px 24px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+        h2 { color: #3d2314; font-size: 1.4rem; margin-bottom: 10px; }
+        .order-id { font-size: 0.95rem; color: #666; margin-bottom: 20px; font-weight: 500; }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        label { font-size: 0.85rem; font-weight: bold; color: #555; display: block; margin-bottom: 6px; }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { border-color: #06c755; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #06c755;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background-color: #05b34c; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        .status-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            display: none;
+        }
+        .status-box.success { background-color: #e8f5e9; color: #2e7d32; }
+        .status-box.warning { background-color: #fff3e0; color: #e65100; }
+        .status-box.error { background-color: #ffebee; color: #c62828; }
+    </style>
 </head>
 <body>
-  <div class="card">
-    <h2>🍵 訂單接收確認</h2>
-    <div class="order-badge" id="display-order-id">載入單號中...</div>
 
-    <!-- 載入中狀態 -->
-    <div id="loading" class="loading-text">⏳ 正在查詢訂單狀態...</div>
+<div class="card">
+    <h2>🍵 水雲茶堂 接單系統</h2>
+    <div class="order-id" id="orderDisplay">單號載入中...</div>
 
-    <!-- 未接單：填寫姓名與接單按鈕 -->
-    <div id="action-area" style="display: none;">
-      <input type="text" id="staff-name" placeholder="請輸入店員姓名 (選填)">
-      <button id="accept-btn" class="btn-active" onclick="handleAccept()">✅ 確認接收此訂單</button>
+    <div id="actionArea">
+        <div class="form-group">
+            <label for="staffName">接單人員姓名 / 稱呼</label>
+            <input type="text" id="staffName" placeholder="請輸入您的名字 (預設：店員)">
+        </div>
+        <button class="btn" id="acceptBtn" onclick="confirmOrder()">確認接收訂單</button>
     </div>
 
-    <!-- 已接單：鎖定狀態 -->
-    <div id="status-area" style="display: none;">
-      <button class="btn-disabled" disabled id="disabled-btn">🔒 該訂單已被接收</button>
-      <div class="status-box" id="status-desc"></div>
-    </div>
-  </div>
+    <div class="status-box" id="statusMsg"></div>
+</div>
 
-  <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwK6fhy7-56eW-vxGaA3NnzTneZ2_dptR1B7OtG-O7MRLhyzz8IcS-UhuFwTV5PXDIb/exec";
+<script>
+    // ⚠️ 請替換為你發布的 Apps Script 網頁應用程式網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwqoO6fllZll9PqNlM5y4A2X-XG/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get('orderId');
+    const orderId = urlParams.get('orderId') || '';
+    const userId = urlParams.get('userId') || ''; // 取出顧客的 userId
+
+    const orderDisplay = document.getElementById('orderDisplay');
+    const statusMsg = document.getElementById('statusMsg');
+    const actionArea = document.getElementById('actionArea');
+    const acceptBtn = document.getElementById('acceptBtn');
 
     window.onload = function() {
-      if (!orderId) {
-        document.getElementById('loading').innerText = "⚠️ 網址缺少訂單編號，無法操作";
-        document.getElementById('display-order-id').innerText = "無效訂單";
-        return;
-      }
-      document.getElementById('display-order-id').innerText = "訂單編號：" + orderId;
+        if (!orderId) {
+            orderDisplay.textContent = "❌ 無效的訂單網址";
+            actionArea.style.display = "none";
+            showStatus("找不到訂單編號，請重新開啟連結。", "error");
+            return;
+        }
 
-      fetch(`${GAS_API_URL}?action=checkStatus&orderId=${encodeURIComponent(orderId)}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('loading').style.display = 'none';
-          if (data.isAccepted) {
-            showAcceptedState(data.staffName);
-          } else {
-            document.getElementById('action-area').style.display = 'block';
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById('loading').innerText = "❌ 載入失敗，請確認連線或重新整理";
-        });
+        orderDisplay.textContent = "🧾 訂單編號：" + orderId;
+        checkOrderStatus();
     };
 
-    function handleAccept() {
-      const btn = document.getElementById('accept-btn');
-      btn.disabled = true;
-      btn.innerText = "處理中...";
-
-      const staffName = document.getElementById('staff-name').value.trim() || "店員";
-
-      fetch(`${GAS_API_URL}?action=acceptOrder&orderId=${encodeURIComponent(orderId)}&staffName=${encodeURIComponent(staffName)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            alert("✅ 接單成功！已發送通知至 LINE 群組。");
-            showAcceptedState(data.staffName);
-          } else {
-            alert("⚠️ " + data.message);
-            showAcceptedState(data.staffName);
-          }
-        })
-        .catch(err => {
-          alert("網路連線錯誤，請重試！");
-          btn.disabled = false;
-          btn.innerText = "✅ 確認接收此訂單";
-        });
+    // 檢查訂單是否已被接單
+    function checkOrderStatus() {
+        fetch(`${GAS_API_URL}?action=checkStatus&orderId=${encodeURIComponent(orderId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.isAccepted) {
+                    actionArea.style.display = "none";
+                    showStatus(`✅ 該訂單已由 【${data.staffName}】 接收！`, "warning");
+                }
+            })
+            .catch(err => {
+                console.error("狀態檢查失敗：", err);
+            });
     }
 
-    function showAcceptedState(staffName) {
-      document.getElementById('action-area').style.display = 'none';
-      document.getElementById('status-area').style.display = 'block';
-      const nameText = staffName || "店員";
-      document.getElementById('disabled-btn').innerText = "🔒 已接收訂單 (" + nameText + ")";
-      document.getElementById('status-desc').innerText = "此筆訂單先前已由 「" + nameText + "」 確認接收，請勿重複製作。";
-      document.getElementById('status-desc').style.color = "#C2482B";
+    // 執行確認接單動作
+    function confirmOrder() {
+        const staffName = document.getElementById('staffName').value.trim() || "店員";
+        acceptBtn.disabled = true;
+        acceptBtn.textContent = "處理中...";
+
+        // 帶入 action, orderId, staffName 與 userId
+        const requestUrl = `${GAS_API_URL}?action=acceptOrder&orderId=${encodeURIComponent(orderId)}&staffName=${encodeURIComponent(staffName)}&userId=${encodeURIComponent(userId)}`;
+
+        fetch(requestUrl)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    actionArea.style.display = "none";
+                    showStatus(`🎉 接單成功！接單人員：${data.staffName}`, "success");
+                } else {
+                    actionArea.style.display = "none";
+                    showStatus(`⚠️ ${data.message}`, "warning");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                acceptBtn.disabled = false;
+                acceptBtn.textContent = "確認接收訂單";
+                showStatus("系統連線錯誤，請再試一次。", "error");
+            });
     }
-  </script>
+
+    function showStatus(text, type) {
+        statusMsg.textContent = text;
+        statusMsg.className = `status-box ${type}`;
+        statusMsg.style.display = "block";
+    }
+</script>
+
 </body>
 </html>
