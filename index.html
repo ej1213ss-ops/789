@@ -148,15 +148,12 @@
         .topping-admin-row { display: flex; align-items: center; gap: 8px; background: #FFF; padding: 6px 10px; border-radius: 6px; border: 1px solid #DDD; margin-bottom: 6px; }
         
         /* 切換開關樣式 */
-        .status-switch-card { background: #FFF8E1; border: 1px solid #FFE082; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+        .status-switch-card { display: flex; justify-content: space-between; align-items: center; background: #FFF8E1; border: 1px solid #FFE082; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
         .switch-label { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
-        .status-btn-group { display: flex; gap: 8px; margin-top: 6px; }
+        .status-btn-group { display: flex; gap: 8px; }
         .status-btn { padding: 6px 14px; border-radius: 20px; font-weight: bold; border: 1px solid #CCC; background: #FFF; cursor: pointer; font-size: 0.85rem; }
         .status-btn.active-open { background: #2E7D32; color: #FFF; border-color: #2E7D32; }
         .status-btn.active-closed { background: #C62828; color: #FFF; border-color: #C62828; }
-
-        .time-picker-group { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.85rem; font-weight: bold; }
-        .time-picker-group input[type="time"] { padding: 4px 8px; border: 1px solid #CCC; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -301,32 +298,16 @@
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
-                <h3 style="color:var(--primary-color);">⚙ 後台管理系統</h3>
+                <h3 style="color:var(--primary-color);">⚙️ <span id="admin-store-title"></span> - 後台管理</h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
 
-            <!-- 選擇要管理的分店 -->
-            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                <label style="font-weight: bold; font-size: 0.9rem;">📍 選擇管理門市：</label>
-                <select id="admin-store-select" style="flex:1; padding:6px; font-weight:bold;" onchange="changeAdminStore(this.value)">
-                </select>
-            </div>
-
-            <!-- 手動切換分店營業狀態與時間設定 -->
+            <!-- 手動切換分店營業狀態 -->
             <div class="status-switch-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <span class="switch-label">🏪 分店營業狀態：</span>
-                    <div class="status-btn-group">
-                        <button id="admin-status-open" class="status-btn" onclick="setStoreBusinessStatus(true)">開啟營業</button>
-                        <button id="admin-status-closed" class="status-btn" onclick="setStoreBusinessStatus(false)">暫停營業</button>
-                    </div>
-                </div>
-
-                <div class="time-picker-group">
-                    <span>⏰ 每日營業時間：</span>
-                    <input type="time" id="admin-start-time" onchange="saveStoreBusinessHours()">
-                    <span>至</span>
-                    <input type="time" id="admin-end-time" onchange="saveStoreBusinessHours()">
+                <span class="switch-label">🏪 分店營業狀態：</span>
+                <div class="status-btn-group">
+                    <button id="admin-status-open" class="status-btn" onclick="setStoreBusinessStatus(true)">開啟營業</button>
+                    <button id="admin-status-closed" class="status-btn" onclick="setStoreBusinessStatus(false)">暫停營業</button>
                 </div>
             </div>
 
@@ -373,48 +354,31 @@
     <script>
     const ADMIN_USER = "amg8288";
     const ADMIN_PWD = "8888";
+    // 已更新為您最新的 Apps Script 部署網址
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIczfNOt0qS1mdOM60PEoi52zTigf7Akqz8AZLHn_BbFMuju-dRlB0MLpClff2lvbP/exec";
 
+    // 1. 初始化 LIFF 並取得顧客的 userId
     let currentUserId = "";
 
-    const DEFAULT_BUSINESS_HOURS = {
-        start: "08:30",
-        end: "21:30"
+    // 營業時間設定 (24小時制)
+    const BUSINESS_HOURS = {
+        startHour: 8,   // 開始時間 (08:30)
+        startMinute: 30,
+        endHour: 21,     // 結束時間 (21:30)
+        endMinute: 30
     };
-
-    function getStoreBusinessHours(storeId) {
-        const saved = localStorage.getItem(`shuiyun_hours_${storeId}`);
-        if (saved) {
-            try { 
-                const parsed = JSON.parse(saved);
-                if (parsed.start && parsed.end) return parsed;
-            } catch(e){}
-        }
-        return DEFAULT_BUSINESS_HOURS;
-    }
 
     function isStoreOpenById(storeId) {
         if (!storeId) return false;
-
         const storeManualStatus = localStorage.getItem(`shuiyun_status_${storeId}`);
         if (storeManualStatus === 'false') {
             return false;
         }
 
-        const hours = getStoreBusinessHours(storeId);
-        if (!hours || !hours.start || !hours.end) return true;
-
-        const [startHour, startMin] = hours.start.split(':').map(Number);
-        const [endHour, endMin] = hours.end.split(':').map(Number);
-
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const startMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
-
-        if (endMinutes < startMinutes) {
-            return currentMinutes >= startMinutes || currentMinutes < endMinutes;
-        }
+        const startMinutes = BUSINESS_HOURS.startHour * 60 + BUSINESS_HOURS.startMinute;
+        const endMinutes = BUSINESS_HOURS.endHour * 60 + BUSINESS_HOURS.endMinute;
 
         return currentMinutes >= startMinutes && currentMinutes < endMinutes;
     }
@@ -430,17 +394,18 @@
 
         const isManualClosed = localStorage.getItem(`shuiyun_status_${selectedStore.id}`) === 'false';
         const isOpen = isStoreOpen();
-        const hours = getStoreBusinessHours(selectedStore.id);
+        const startStr = `${String(BUSINESS_HOURS.startHour).padStart(2, '0')}:${String(BUSINESS_HOURS.startMinute).padStart(2, '0')}`;
+        const endStr = `${String(BUSINESS_HOURS.endHour).padStart(2, '0')}:${String(BUSINESS_HOURS.endMinute).padStart(2, '0')}`;
 
         if (isManualClosed) {
             bar.className = "business-status-bar closed";
             bar.innerHTML = `🔴 本店目前暫停營業（管理員關閉點餐系統）`;
         } else if (isOpen) {
             bar.className = "business-status-bar open";
-            bar.innerHTML = `🟢 營業中（開放線上點餐時間：${hours.start} - ${hours.end}）`;
+            bar.innerHTML = `🟢 營業中（開放線上點餐時間：${startStr} - ${endStr}）`;
         } else {
             bar.className = "business-status-bar closed";
-            bar.innerHTML = `🔴 非營業時間（開放線上點餐時間：${hours.start} - ${hours.end}）`;
+            bar.innerHTML = `🔴 非營業時間（開放線上點餐時間：${startStr} - ${endStr}）`;
         }
     }
 
@@ -457,7 +422,7 @@
         {
             id: "madou",
             name: "麻豆店",
-            liffId: "2011647627-2FaZMNpZ",
+            liffId: "2011717103-H4l6Arr3",
             lat: 23.1816,
             lng: 120.2483,
             address: "台南市麻豆區興中路36號",
@@ -466,7 +431,6 @@
     ];
 
     let selectedStore = null;
-    let adminActiveStoreId = "jiali"; // 後台當前檢視/編輯的門市 ID
     let isLiffInitialized = false;
 
     const ALL_SWEETNESS_OPTIONS = ["正常糖(10分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)", "甜度固定"];
@@ -562,25 +526,25 @@
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                selectStore(targetStore, false);
-                return;
+                if (!isStoreOpenById(targetStore.id)) {
+                    alert(`${targetStore.name}目前未開放線上點餐！`);
+                } else {
+                    selectStore(targetStore);
+                    return;
+                }
             }
         }
         initLocationAndStores();
     };
 
     function initLocationAndStores() {
-        // 防線 1：已選擇分店則直接返回
-        if (selectedStore) return;
-
         const statusElem = document.getElementById('geo-status');
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 position => {
-                    if (selectedStore) return;
                     const userLat = position.coords.latitude;
                     const userLng = position.coords.longitude;
-                    if (statusElem) statusElem.innerText = "已完成定位 (由近至遠排序)";
+                    statusElem.innerText = "已完成定位 (由近至遠排序)";
                     STORES.forEach(s => {
                         s.distance = getDistanceKm(userLat, userLng, s.lat, s.lng);
                     });
@@ -588,40 +552,31 @@
                     renderStoreList();
                 },
                 error => {
-                    if (selectedStore) return;
-                    if (statusElem) statusElem.innerText = "無法取得定位，已預設排序";
+                    statusElem.innerText = "無法取得定位，已預設排序";
                     renderStoreList();
                 },
                 { timeout: 5000 }
             );
         } else {
-            if (statusElem) statusElem.innerText = "設備不支援定位";
+            statusElem.innerText = "設備不支援定位";
             renderStoreList();
         }
     }
 
     function renderStoreList() {
-        // 防線 2：關鍵修復！若已有 selectedStore，絕對不可渲染分店頁面
-        if (selectedStore) {
-            document.getElementById('store-select-view').style.display = 'none';
-            return;
-        }
-
         const container = document.getElementById('store-list-container');
-        if (!container) return;
         container.innerHTML = '';
-
         STORES.forEach(store => {
             const openStatus = isStoreOpenById(store.id);
-            const hours = getStoreBusinessHours(store.id);
+            const isManualClosed = localStorage.getItem(`shuiyun_status_${store.id}`) === 'false';
 
             const card = document.createElement('div');
             card.className = `store-select-card ${openStatus ? '' : 'closed'}`;
             const distText = store.distance !== undefined ? `距您約 ${store.distance.toFixed(1)} km` : '';
             
             let statusBadge = openStatus 
-                ? `<span class="store-status-tag open">🟢 開放線上點餐 (${hours.start} - ${hours.end})</span>` 
-                : `<span class="store-status-tag closed">🔴 未開放線上點餐 (${hours.start} - ${hours.end})</span>`;
+                ? `<span class="store-status-tag open">🟢 開放線上點餐</span>` 
+                : `<span class="store-status-tag closed">🔴 未開放線上點餐</span>`;
 
             card.innerHTML = `
                 <div class="store-title">
@@ -635,22 +590,21 @@
                 </div>
             `;
             
-            // 點擊事件明確阻斷預設行為與冒泡
-            card.onclick = (e) => {
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
+            card.onclick = () => {
+                if (!openStatus) {
+                    const reason = isManualClosed ? "該分店暫停營業中" : "目前非營業時間";
+                    alert(`【${store.name}】未開放線上點餐（${reason}）`);
+                    return;
                 }
-                selectStore(store, false);
+                selectStore(store);
             };
             container.appendChild(card);
         });
     }
 
-    function selectStore(store, updateUrl = false) {
+    function selectStore(store) {
         selectedStore = store;
 
-        // 單頁 View 切換（確保分店選擇頁隱藏，點餐頁顯示）
         document.getElementById('store-select-view').style.display = 'none';
         document.getElementById('ordering-view').style.display = 'block';
         document.getElementById('confirmation-view').style.display = 'none';
@@ -670,7 +624,6 @@
         menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${store.id}`)) || defaultMenu;
         toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${store.id}`)) || defaultToppings;
 
-        // LIFF 初始化
         if (typeof liff !== 'undefined' && store.liffId && !store.liffId.includes("YOUR_")) {
             if (!isLiffInitialized) {
                 liff.init({ liffId: store.liffId }).then(() => {
@@ -703,15 +656,7 @@
         if (cartItems.length > 0) {
             if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
         }
-        selectedStore = null;
-
-        document.getElementById('store-select-view').style.display = 'block';
-        document.getElementById('ordering-view').style.display = 'none';
-        document.getElementById('confirmation-view').style.display = 'none';
-        document.getElementById('cart-bar').style.display = 'none';
-        const currentTag = document.getElementById('current-store-tag');
-        if (currentTag) currentTag.style.display = 'none';
-        renderStoreList();
+        window.location.href = window.location.pathname;
     }
 
     function isValidPhone(phone) { return /^09\d{8}$/.test(phone); }
@@ -747,38 +692,18 @@
     }
 
     function openAdminModal() {
-        const selectElem = document.getElementById('admin-store-select');
-        selectElem.innerHTML = STORES.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-
-        if (selectedStore) {
-            adminActiveStoreId = selectedStore.id;
-        } else {
-            adminActiveStoreId = STORES[0].id;
-        }
-        selectElem.value = adminActiveStoreId;
-
-        loadAdminStoreData();
-        document.getElementById('admin-modal').style.display = 'flex';
-    }
-
-    function changeAdminStore(storeId) {
-        adminActiveStoreId = storeId;
-        loadAdminStoreData();
-    }
-
-    function loadAdminStoreData() {
-        menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${adminActiveStoreId}`)) || defaultMenu;
-        toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${adminActiveStoreId}`)) || defaultToppings;
-
+        if (!selectedStore) { alert("請先選擇要管理的分店！"); return; }
+        document.getElementById('admin-store-title').innerText = selectedStore.name;
         updateAdminStatusUI();
-        updateAdminTimeUI();
         renderAdminToppingsList();
         renderAdminItemsList();
         renderNewItemSweetnessOptions();
+        document.getElementById('admin-modal').style.display = 'flex';
     }
 
     function updateAdminStatusUI() {
-        const status = localStorage.getItem(`shuiyun_status_${adminActiveStoreId}`) !== 'false';
+        if (!selectedStore) return;
+        const status = localStorage.getItem(`shuiyun_status_${selectedStore.id}`) !== 'false';
         const btnOpen = document.getElementById('admin-status-open');
         const btnClosed = document.getElementById('admin-status-closed');
 
@@ -791,44 +716,17 @@
         }
     }
 
-    function updateAdminTimeUI() {
-        const hours = getStoreBusinessHours(adminActiveStoreId);
-        document.getElementById('admin-start-time').value = hours.start;
-        document.getElementById('admin-end-time').value = hours.end;
-    }
-
     function setStoreBusinessStatus(isOpen) {
-        localStorage.setItem(`shuiyun_status_${adminActiveStoreId}`, isOpen ? 'true' : 'false');
+        if (!selectedStore) return;
+        localStorage.setItem(`shuiyun_status_${selectedStore.id}`, isOpen ? 'true' : 'false');
         updateAdminStatusUI();
-    }
-
-    function saveStoreBusinessHours() {
-        const startTime = document.getElementById('admin-start-time').value;
-        const endTime = document.getElementById('admin-end-time').value;
-
-        if (startTime && endTime) {
-            localStorage.setItem(`shuiyun_hours_${adminActiveStoreId}`, JSON.stringify({
-                start: startTime,
-                end: endTime
-            }));
-            
-            localStorage.setItem(`shuiyun_status_${adminActiveStoreId}`, 'true');
-            updateAdminStatusUI();
-        }
     }
 
     function closeAdminModal() {
         document.getElementById('admin-modal').style.display = 'none';
-
-        if (selectedStore) {
-            menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${selectedStore.id}`)) || defaultMenu;
-            toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${selectedStore.id}`)) || defaultToppings;
-            renderBusinessStatus();
-            renderCategories();
-            filterMenu();
-        } else {
-            renderStoreList();
-        }
+        renderBusinessStatus();
+        renderCategories();
+        filterMenu();
     }
 
     function renderCategories() {
@@ -1204,6 +1102,7 @@
         document.getElementById('confirm-final-total').innerText = `${totalQty} 杯 / $${totals.finalTotal}`;
     }
 
+    // 關鍵修復：使用 no-cors 模式與 text/plain 避免 CORS 阻檔
     function sendOrderToGoogleScript(orderData) {
         if (!GOOGLE_SCRIPT_URL) return Promise.reject("未設定 GOOGLE_SCRIPT_URL");
 
@@ -1266,6 +1165,7 @@
             note: note
         };
 
+        // 背景發送 API 資料
         sendOrderToGoogleScript(payload)
             .then(() => {
                 console.log("訂單已成功傳送至 Apps Script");
@@ -1274,6 +1174,7 @@
                 console.error("GAS 傳送失敗:", err);
             });
 
+        // LIFF 訊息推送
         if (typeof liff !== 'undefined' && liff.isInClient()) {
             liff.sendMessages([{ type: 'text', text: orderDetailMsg }]).then(() => {
                 alert("訂單已成功發送至官方 LINE！");
@@ -1326,7 +1227,8 @@
         renderAdminToppingsList();
     }
     function saveToppingData() {
-        localStorage.setItem(`shuiyun_toppings_${adminActiveStoreId}`, JSON.stringify(toppingData));
+        if (!selectedStore) return;
+        localStorage.setItem(`shuiyun_toppings_${selectedStore.id}`, JSON.stringify(toppingData));
     }
 
     function renderAdminItemsList() {
@@ -1403,7 +1305,8 @@
     }
 
     function saveMenuData() {
-        localStorage.setItem(`shuiyun_menu_${adminActiveStoreId}`, JSON.stringify(menuData));
+        if (!selectedStore) return;
+        localStorage.setItem(`shuiyun_menu_${selectedStore.id}`, JSON.stringify(menuData));
     }
     </script>
 </body>
