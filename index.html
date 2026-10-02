@@ -300,7 +300,7 @@
     <!-- 後台管理 Modal -->
     <div class="modal" id="admin-modal">
         <div class="modal-content">
-            <div style="display:flex; justify-style:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
                 <h3 style="color:var(--primary-color);">⚙ 後台管理系統</h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
@@ -546,6 +546,7 @@
         return R * c;
     }
 
+    // 支援通用 URL 參數解析（無論 ? 或是 #）
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
         let val = urlParams.get(param);
@@ -557,13 +558,12 @@
         return val;
     }
 
-    // 🎯 核心修復：強制帶有參數時直奔點餐頁面
     window.onload = function() {
         const storeId = getQueryParam('store');
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                selectStore(targetStore);
+                selectStore(targetStore, false); // 不觸發 pushState 重刷
                 return;
             }
         }
@@ -571,7 +571,7 @@
     };
 
     function initLocationAndStores() {
-        if (selectedStore) return; // 已選分店防呆
+        if (selectedStore) return;
 
         const statusElem = document.getElementById('geo-status');
         if ("geolocation" in navigator) {
@@ -607,7 +607,6 @@
         container.innerHTML = '';
         STORES.forEach(store => {
             const openStatus = isStoreOpenById(store.id);
-            const isManualClosed = localStorage.getItem(`shuiyun_status_${store.id}`) === 'false';
             const hours = getStoreBusinessHours(store.id);
 
             const card = document.createElement('div');
@@ -630,23 +629,24 @@
                 </div>
             `;
             
+            // 🎯 防重導向修復：點擊直接純切換 View，不觸發全頁刷新！
             card.onclick = () => {
-                if (!openStatus) {
-                    const reason = isManualClosed ? "該分店暫停營業中" : "目前非營業時間";
-                    alert(`【${store.name}】未開放線上點餐（${reason}）`);
-                    return;
-                }
-                
-                const currentPath = window.location.pathname;
-                window.location.href = `${currentPath}?store=${store.id}`;
+                selectStore(store, true);
             };
             container.appendChild(card);
         });
     }
 
-    function selectStore(store) {
+    function selectStore(store, updateUrl = true) {
         selectedStore = store;
 
+        // 悄悄更新網址不重刷
+        if (updateUrl && window.history && window.history.pushState) {
+            const newUrl = `${window.location.pathname}?store=${store.id}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+        }
+
+        // 單頁 View 切換
         document.getElementById('store-select-view').style.display = 'none';
         document.getElementById('ordering-view').style.display = 'block';
         document.getElementById('confirmation-view').style.display = 'none';
@@ -666,6 +666,7 @@
         menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${store.id}`)) || defaultMenu;
         toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${store.id}`)) || defaultToppings;
 
+        // 靜默式 LIFF 初始化 (不干擾 UI View)
         if (typeof liff !== 'undefined' && store.liffId && !store.liffId.includes("YOUR_")) {
             if (!isLiffInitialized) {
                 liff.init({ liffId: store.liffId }).then(() => {
@@ -698,7 +699,20 @@
         if (cartItems.length > 0) {
             if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
         }
-        window.location.href = window.location.pathname;
+        selectedStore = null;
+
+        // 清除 URL 參數
+        if (window.history && window.history.pushState) {
+            window.history.pushState({}, '', window.location.pathname);
+        }
+
+        document.getElementById('store-select-view').style.display = 'block';
+        document.getElementById('ordering-view').style.display = 'none';
+        document.getElementById('confirmation-view').style.display = 'none';
+        document.getElementById('cart-bar').style.display = 'none';
+        const currentTag = document.getElementById('current-store-tag');
+        if (currentTag) currentTag.style.display = 'none';
+        renderStoreList();
     }
 
     function isValidPhone(phone) { return /^09\d{8}$/.test(phone); }
