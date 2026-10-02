@@ -562,22 +562,22 @@
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                if (!isStoreOpenById(targetStore.id)) {
-                    alert(`${targetStore.name}目前未開放線上點餐！`);
-                } else {
-                    selectStore(targetStore);
-                    return;
-                }
+                selectStore(targetStore);
+                return;
             }
         }
         initLocationAndStores();
     };
 
     function initLocationAndStores() {
+        // 防呆：如果當前已經進入了點餐畫面（網址有帶 ?store=），定位完成後不要重繪選單視圖
+        if (selectedStore) return;
+
         const statusElem = document.getElementById('geo-status');
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 position => {
+                    if (selectedStore) return; // 再次檢查，避免競態狀況
                     const userLat = position.coords.latitude;
                     const userLng = position.coords.longitude;
                     statusElem.innerText = "已完成定位 (由近至遠排序)";
@@ -588,6 +588,7 @@
                     renderStoreList();
                 },
                 error => {
+                    if (selectedStore) return;
                     statusElem.innerText = "無法取得定位，已預設排序";
                     renderStoreList();
                 },
@@ -600,6 +601,9 @@
     }
 
     function renderStoreList() {
+        // 如果已經選擇了分店，不重繪列表
+        if (selectedStore) return;
+
         const container = document.getElementById('store-list-container');
         container.innerHTML = '';
         STORES.forEach(store => {
