@@ -314,7 +314,7 @@
 
             <!-- 手動切換分店營業狀態與時間設定 -->
             <div class="status-switch-card">
-                <div style="display:flex; justify-style:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <span class="switch-label">🏪 分店營業狀態：</span>
                     <div class="status-btn-group">
                         <button id="admin-status-open" class="status-btn" onclick="setStoreBusinessStatus(true)">開啟營業</button>
@@ -546,7 +546,6 @@
         return R * c;
     }
 
-    // 支援通用 URL 參數解析（無論 ? 或是 #）
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
         let val = urlParams.get(param);
@@ -563,7 +562,7 @@
         if (storeId) {
             const targetStore = STORES.find(s => s.id === storeId);
             if (targetStore) {
-                selectStore(targetStore, false); // 不觸發 pushState 重刷
+                selectStore(targetStore, false);
                 return;
             }
         }
@@ -571,6 +570,7 @@
     };
 
     function initLocationAndStores() {
+        // 防線 1：已選擇分店則直接返回
         if (selectedStore) return;
 
         const statusElem = document.getElementById('geo-status');
@@ -580,7 +580,7 @@
                     if (selectedStore) return;
                     const userLat = position.coords.latitude;
                     const userLng = position.coords.longitude;
-                    statusElem.innerText = "已完成定位 (由近至遠排序)";
+                    if (statusElem) statusElem.innerText = "已完成定位 (由近至遠排序)";
                     STORES.forEach(s => {
                         s.distance = getDistanceKm(userLat, userLng, s.lat, s.lng);
                     });
@@ -589,22 +589,28 @@
                 },
                 error => {
                     if (selectedStore) return;
-                    statusElem.innerText = "無法取得定位，已預設排序";
+                    if (statusElem) statusElem.innerText = "無法取得定位，已預設排序";
                     renderStoreList();
                 },
                 { timeout: 5000 }
             );
         } else {
-            statusElem.innerText = "設備不支援定位";
+            if (statusElem) statusElem.innerText = "設備不支援定位";
             renderStoreList();
         }
     }
 
     function renderStoreList() {
-        if (selectedStore) return;
+        // 防線 2：關鍵修復！若已有 selectedStore，絕對不可渲染分店頁面
+        if (selectedStore) {
+            document.getElementById('store-select-view').style.display = 'none';
+            return;
+        }
 
         const container = document.getElementById('store-list-container');
+        if (!container) return;
         container.innerHTML = '';
+
         STORES.forEach(store => {
             const openStatus = isStoreOpenById(store.id);
             const hours = getStoreBusinessHours(store.id);
@@ -629,24 +635,22 @@
                 </div>
             `;
             
-            // 🎯 防重導向修復：點擊直接純切換 View，不觸發全頁刷新！
-            card.onclick = () => {
-                selectStore(store, true);
+            // 點擊事件明確阻斷預設行為與冒泡
+            card.onclick = (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                selectStore(store, false);
             };
             container.appendChild(card);
         });
     }
 
-    function selectStore(store, updateUrl = true) {
+    function selectStore(store, updateUrl = false) {
         selectedStore = store;
 
-        // 悄悄更新網址不重刷
-        if (updateUrl && window.history && window.history.pushState) {
-            const newUrl = `${window.location.pathname}?store=${store.id}`;
-            window.history.pushState({ path: newUrl }, '', newUrl);
-        }
-
-        // 單頁 View 切換
+        // 單頁 View 切換（確保分店選擇頁隱藏，點餐頁顯示）
         document.getElementById('store-select-view').style.display = 'none';
         document.getElementById('ordering-view').style.display = 'block';
         document.getElementById('confirmation-view').style.display = 'none';
@@ -666,7 +670,7 @@
         menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${store.id}`)) || defaultMenu;
         toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${store.id}`)) || defaultToppings;
 
-        // 靜默式 LIFF 初始化 (不干擾 UI View)
+        // LIFF 初始化
         if (typeof liff !== 'undefined' && store.liffId && !store.liffId.includes("YOUR_")) {
             if (!isLiffInitialized) {
                 liff.init({ liffId: store.liffId }).then(() => {
@@ -700,11 +704,6 @@
             if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
         }
         selectedStore = null;
-
-        // 清除 URL 參數
-        if (window.history && window.history.pushState) {
-            window.history.pushState({}, '', window.location.pathname);
-        }
 
         document.getElementById('store-select-view').style.display = 'block';
         document.getElementById('ordering-view').style.display = 'none';
