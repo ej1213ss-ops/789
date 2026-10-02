@@ -301,7 +301,7 @@
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
-                <h3 style="color:var(--primary-color);">⚙️️ 後台管理系統</h3>
+                <h3 style="color:var(--primary-color);">⚙ 後台管理系統</h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
 
@@ -385,19 +385,25 @@
     function getStoreBusinessHours(storeId) {
         const saved = localStorage.getItem(`shuiyun_hours_${storeId}`);
         if (saved) {
-            try { return JSON.parse(saved); } catch(e){}
+            try { 
+                const parsed = JSON.parse(saved);
+                if (parsed.start && parsed.end) return parsed;
+            } catch(e){}
         }
         return DEFAULT_BUSINESS_HOURS;
     }
 
     function isStoreOpenById(storeId) {
         if (!storeId) return false;
+
         const storeManualStatus = localStorage.getItem(`shuiyun_status_${storeId}`);
         if (storeManualStatus === 'false') {
             return false;
         }
 
         const hours = getStoreBusinessHours(storeId);
+        if (!hours || !hours.start || !hours.end) return true;
+
         const [startHour, startMin] = hours.start.split(':').map(Number);
         const [endHour, endMin] = hours.end.split(':').map(Number);
 
@@ -405,6 +411,10 @@
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
         const startMinutes = startHour * 60 + startMin;
         const endMinutes = endHour * 60 + endMin;
+
+        if (endMinutes < startMinutes) {
+            return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+        }
 
         return currentMinutes >= startMinutes && currentMinutes < endMinutes;
     }
@@ -589,49 +599,48 @@
         }
     }
 
-  function renderStoreList() {
-    const container = document.getElementById('store-list-container');
-    container.innerHTML = '';
-    STORES.forEach(store => {
-        const openStatus = isStoreOpenById(store.id);
-        const isManualClosed = localStorage.getItem(`shuiyun_status_${store.id}`) === 'false';
-        const hours = getStoreBusinessHours(store.id);
+    function renderStoreList() {
+        const container = document.getElementById('store-list-container');
+        container.innerHTML = '';
+        STORES.forEach(store => {
+            const openStatus = isStoreOpenById(store.id);
+            const isManualClosed = localStorage.getItem(`shuiyun_status_${store.id}`) === 'false';
+            const hours = getStoreBusinessHours(store.id);
 
-        const card = document.createElement('div');
-        card.className = `store-select-card ${openStatus ? '' : 'closed'}`;
-        const distText = store.distance !== undefined ? `距您約 ${store.distance.toFixed(1)} km` : '';
-        
-        let statusBadge = openStatus 
-            ? `<span class="store-status-tag open">🟢 開放線上點餐 (${hours.start} - ${hours.end})</span>` 
-            : `<span class="store-status-tag closed">🔴 未開放線上點餐 (${hours.start} - ${hours.end})</span>`;
-
-        card.innerHTML = `
-            <div class="store-title">
-                <span>🏪 ${store.name}</span>
-                <span class="store-distance">${distText}</span>
-            </div>
-            <div class="store-info">
-                📍 ${store.address}<br>
-                📞 ${store.phone}<br>
-                ${statusBadge}
-            </div>
-        `;
-        
-        // 🎯 核心修復：點擊分店後更新 URL 參數並重新整理頁面，確保徹底載入該店資料
-        card.onclick = () => {
-            if (!openStatus) {
-                const reason = isManualClosed ? "該分店暫停營業中" : "目前非營業時間";
-                alert(`【${store.name}】未開放線上點餐（${reason}）`);
-                return;
-            }
+            const card = document.createElement('div');
+            card.className = `store-select-card ${openStatus ? '' : 'closed'}`;
+            const distText = store.distance !== undefined ? `距您約 ${store.distance.toFixed(1)} km` : '';
             
-            // 將網址自動帶入 ?store=madou 或 ?store=jiali 並刷新
-            const currentPath = window.location.pathname;
-            window.location.href = `${currentPath}?store=${store.id}`;
-        };
-        container.appendChild(card);
-    });
-}
+            let statusBadge = openStatus 
+                ? `<span class="store-status-tag open">🟢 開放線上點餐 (${hours.start} - ${hours.end})</span>` 
+                : `<span class="store-status-tag closed">🔴 未開放線上點餐 (${hours.start} - ${hours.end})</span>`;
+
+            card.innerHTML = `
+                <div class="store-title">
+                    <span>🏪 ${store.name}</span>
+                    <span class="store-distance">${distText}</span>
+                </div>
+                <div class="store-info">
+                    📍 ${store.address}<br>
+                    📞 ${store.phone}<br>
+                    ${statusBadge}
+                </div>
+            `;
+            
+            card.onclick = () => {
+                if (!openStatus) {
+                    const reason = isManualClosed ? "該分店暫停營業中" : "目前非營業時間";
+                    alert(`【${store.name}】未開放線上點餐（${reason}）`);
+                    return;
+                }
+                
+                const currentPath = window.location.pathname;
+                window.location.href = `${currentPath}?store=${store.id}`;
+            };
+            container.appendChild(card);
+        });
+    }
+
     function selectStore(store) {
         selectedStore = store;
 
@@ -786,6 +795,10 @@
                 start: startTime,
                 end: endTime
             }));
+            
+            // 變更營業時間時自動重置為開啟營業狀態，避免被舊設定卡住
+            localStorage.setItem(`shuiyun_status_${adminActiveStoreId}`, 'true');
+            updateAdminStatusUI();
         }
     }
 
