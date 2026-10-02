@@ -294,11 +294,15 @@
         </div>
     </div>
 
-    <!-- 後台管理 Modal -->
+    <!-- 後台管理 Modal (已增設分店選擇下拉選單) -->
     <div class="modal" id="admin-modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
-                <h3 style="color:var(--primary-color);">⚙️ <span id="admin-store-title"></span> - 後台管理</h3>
+                <h3 style="color:var(--primary-color); display:flex; align-items:center; gap:8px;">
+                    ⚙️ 後台管理 - 
+                    <select id="admin-store-select" onchange="switchAdminStore(this.value)" style="font-size:0.95rem; font-weight:bold; padding:4px 8px; border-radius:6px; border:1px solid var(--secondary-color); background:#FFF; color:var(--primary-color);">
+                    </select>
+                </h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
 
@@ -354,10 +358,8 @@
    <script>
     const ADMIN_USER = "amg8288";
     const ADMIN_PWD = "8888";
-    // 已更新為您最新的 Apps Script 部署網址
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIczfNOt0qS1mdOM60PEoi52zTigf7Akqz8AZLHn_BbFMuju-dRlB0MLpClff2lvbP/exec";
 
-    // 1. 初始化 LIFF 並取得顧客的 userId
     let currentUserId = "";
 
     // 營業時間設定 (24小時制)
@@ -409,11 +411,13 @@
         }
     }
 
+    const SHARED_LIFF_ID = "2011647627-2FaZMNpZ"; // 方案 B：共用組
+
     const STORES = [
         {
             id: "jiali",
             name: "佳里店",
-            liffId: "2011647627-2FaZMNpZ",
+            liffId: SHARED_LIFF_ID,
             lat: 23.167,
             lng: 120.177,
             address: "台南市佳里區文化路277號",
@@ -422,7 +426,7 @@
         {
             id: "madou",
             name: "麻豆店",
-            liffId: "2011647627-2FaZMNpZ",
+            liffId: SHARED_LIFF_ID,
             lat: 23.1816,
             lng: 120.2483,
             address: "台南市麻豆區興中路36號",
@@ -431,7 +435,7 @@
     ];
 
     let selectedStore = null;
-    let initializedLiffStoreId = null; // 記錄目前初始化過的 Store ID
+    let initializedLiffStoreId = null;
 
     const ALL_SWEETNESS_OPTIONS = ["正常糖(10分)", "半糖(5分)", "微糖(3分)", "一分糖(1分)", "無糖(0分)", "甜度固定"];
 
@@ -603,7 +607,6 @@
     }
 
     function selectStore(store, shouldReload = false) {
-        // 如果 LIFF 已經初始化且切換到不同的分店，進行 URL 帶參刷新以重新載入對應的 LIFF App Context
         if (shouldReload || (initializedLiffStoreId && initializedLiffStoreId !== store.id)) {
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('store', store.id);
@@ -664,7 +667,6 @@
         if (cartItems.length > 0) {
             if (!confirm("切換分店將會清空當前購物車，確定要切換嗎？")) return;
         }
-        // 清除 URL 參數並重新進入分店選擇畫面
         const cleanUrl = window.location.origin + window.location.pathname;
         window.location.href = cleanUrl;
     }
@@ -701,14 +703,41 @@
         }
     }
 
+    /* --- 管理員後台核心邏輯（已升級） --- */
     function openAdminModal() {
-        if (!selectedStore) { alert("請先選擇要管理的分店！"); return; }
-        document.getElementById('admin-store-title').innerText = selectedStore.name;
+        const storeSelect = document.getElementById('admin-store-select');
+        if (storeSelect) {
+            storeSelect.innerHTML = STORES.map(s => 
+                `<option value="${s.id}" ${selectedStore && selectedStore.id === s.id ? 'selected' : ''}>${s.name}</option>`
+            ).join('');
+        }
+
+        if (!selectedStore) {
+            selectedStore = STORES[0];
+        }
+
+        menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${selectedStore.id}`)) || defaultMenu;
+        toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${selectedStore.id}`)) || defaultToppings;
+
+        refreshAdminData();
+        document.getElementById('admin-modal').style.display = 'flex';
+    }
+
+    function switchAdminStore(storeId) {
+        const target = STORES.find(s => s.id === storeId);
+        if (target) {
+            selectedStore = target;
+            menuData = JSON.parse(localStorage.getItem(`shuiyun_menu_${selectedStore.id}`)) || defaultMenu;
+            toppingData = JSON.parse(localStorage.getItem(`shuiyun_toppings_${selectedStore.id}`)) || defaultToppings;
+            refreshAdminData();
+        }
+    }
+
+    function refreshAdminData() {
         updateAdminStatusUI();
         renderAdminToppingsList();
         renderAdminItemsList();
         renderNewItemSweetnessOptions();
-        document.getElementById('admin-modal').style.display = 'flex';
     }
 
     function updateAdminStatusUI() {
@@ -734,9 +763,14 @@
 
     function closeAdminModal() {
         document.getElementById('admin-modal').style.display = 'none';
-        renderBusinessStatus();
-        renderCategories();
-        filterMenu();
+        
+        if (document.getElementById('store-select-view').style.display !== 'none') {
+            renderStoreList();
+        } else {
+            renderBusinessStatus();
+            renderCategories();
+            filterMenu();
+        }
     }
 
     function renderCategories() {
