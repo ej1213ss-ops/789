@@ -300,7 +300,7 @@
     <!-- 後台管理 Modal -->
     <div class="modal" id="admin-modal">
         <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
+            <div style="display:flex; justify-style:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #EEE; padding-bottom:8px;">
                 <h3 style="color:var(--primary-color);">⚙ 後台管理系統</h3>
                 <span style="cursor:pointer; color:#888; font-weight:bold;" onclick="closeAdminModal()">✕ 關閉</span>
             </div>
@@ -557,6 +557,7 @@
         return val;
     }
 
+    // 🎯 核心修復：強制帶有參數時直奔點餐頁面
     window.onload = function() {
         const storeId = getQueryParam('store');
         if (storeId) {
@@ -570,14 +571,13 @@
     };
 
     function initLocationAndStores() {
-        // 防呆：如果當前已經進入了點餐畫面（網址有帶 ?store=），定位完成後不要重繪選單視圖
-        if (selectedStore) return;
+        if (selectedStore) return; // 已選分店防呆
 
         const statusElem = document.getElementById('geo-status');
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 position => {
-                    if (selectedStore) return; // 再次檢查，避免競態狀況
+                    if (selectedStore) return;
                     const userLat = position.coords.latitude;
                     const userLng = position.coords.longitude;
                     statusElem.innerText = "已完成定位 (由近至遠排序)";
@@ -601,7 +601,6 @@
     }
 
     function renderStoreList() {
-        // 如果已經選擇了分店，不重繪列表
         if (selectedStore) return;
 
         const container = document.getElementById('store-list-container');
@@ -800,7 +799,6 @@
                 end: endTime
             }));
             
-            // 變更營業時間時自動重置為開啟營業狀態，避免被舊設定卡住
             localStorage.setItem(`shuiyun_status_${adminActiveStoreId}`, 'true');
             updateAdminStatusUI();
         }
