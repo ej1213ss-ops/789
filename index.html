@@ -387,6 +387,13 @@
         endMinute: 30
     };
 
+    // 判斷當前時間是否到達早上 10:30 (10*60 + 30 = 630 分鐘)
+    function isPearlAvailable() {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        return currentMinutes >= 630;
+    }
+
     function getStoreBusinessHours(storeId) {
         const saved = localStorage.getItem(`shuiyun_hours_${storeId}`);
         if (saved) {
@@ -834,10 +841,18 @@
 
     function filterMenu() {
         const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+        const pearlReady = isPearlAvailable();
+
         const filtered = menuData.filter(item => {
             const matchCategory = (currentCategory === "全部") || (item.category === currentCategory);
             const matchKeyword = item.name.toLowerCase().includes(keyword);
-            const disabledByTopping = toppingData.some(t => !t.active && item.name.includes(t.name));
+            
+            // 檢查是否因加料停用或未到珍珠開放時間(早上10:30)而需要隱藏相關飲料
+            const disabledByTopping = toppingData.some(t => {
+                if (t.name.includes("珍珠") && !pearlReady) return true;
+                return !t.active && item.name.includes(t.name);
+            });
+
             return matchCategory && matchKeyword && !disabledByTopping;
         });
         renderMenu(filtered);
@@ -859,7 +874,13 @@
             return;
         }
 
-        const activeToppings = toppingData.filter(t => t.active);
+        const pearlReady = isPearlAvailable();
+        // 前台過濾加料列表：1. 需在 active 狀態 2. 若為珍珠項目，需滿 10:30 始可開放
+        const activeToppings = toppingData.filter(t => {
+            if (t.name.includes("珍珠") && !pearlReady) return false;
+            return t.active;
+        });
+
         const isOpen = isStoreOpen();
 
         itemsToRender.forEach(item => {
